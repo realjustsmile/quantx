@@ -1,0 +1,51 @@
+# eclipse
+bin
+*.launch
+.settings
+.metadata
+.classpath
+.project
+
+# idea
+out
+*.ipr
+*.iws
+*.iml
+.idea
+
+# gradle
+build
+.gradle
+
+# other
+eclipse
+run
+
+# Files from Forge MDK
+forge_README.txt
+forge*changelog.txt
+
+# === Gradle ===
+.gradle/
+build/
+
+# === IntelliJ IDEA ===
+.idea/
+*.iml
+
+# === Eclipse ===
+.settings/
+.project
+.classpath
+
+# === Minecraft / Forge ===
+run/
+run-data/
+logs/
+crash-reports/
+forge*changelog.txt
+src/generated/
+
+# === OS ===
+.DS_Store
+Thumbs.db

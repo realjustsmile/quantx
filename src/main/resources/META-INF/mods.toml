@@ -1,0 +1,26 @@
+modLoader="javafml"
+loaderVersion="[52,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="quantx"
+version="1.0.0"
+displayName="QuantX"
+authors="JUST SMILE"
+description='''
+QuantX - мой первый мод для Minecraft.
+'''
+
+[[dependencies.quantx]]
+modId="forge"
+mandatory=true
+versionRange="[52,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.quantx]]
+modId="minecraft"
+mandatory=true
+versionRange="[26.3,)"
+ordering="NONE"
+side="BOTH"
