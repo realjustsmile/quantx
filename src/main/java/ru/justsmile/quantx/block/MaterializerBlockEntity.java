@@ -1,14 +1,24 @@
 package ru.justsmile.quantx.block;
 
+import com.mojang.serialization.Codec;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
@@ -17,7 +27,7 @@ import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.justsmile.quantx.QuantX;
-import ru.justsmile.quantx.matter.MatterTier;
+import ru.justsmile.quantx.matter.MatterValues;
 
 /**
  * Блок-материализатор. Хранит материю как числа (микро-единицы)
@@ -28,6 +38,21 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
     public static final int SLOT_INPUT = 0;
     public static final int SLOT_OUTPUT = 1;
     public static final int SLOT_COUNT = 2;
+
+    /** Режимы работы материализатора. */
+    public enum Mode {
+        /** Изучение предмета — запись рецепта в knownRecipes. */
+        SCAN,
+        /** Разбор предмета в серую материю с потерями. */
+        DEMATERIALIZE,
+        /** Сборка изученного предмета из материи. */
+        MATERIALIZE
+    }
+
+    // Длительности операций в тиках.
+    public static final int SCAN_TICKS = 100;
+    public static final int DEMATERIALIZE_TICKS = 40;
+    public static final int MATERIALIZE_TICKS = 60;
 
     // ===== Инвентарь =====
     private final ItemStackHandler inventory = new ItemStackHandler(SLOT_COUNT) {
@@ -48,10 +73,30 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
         }
     };
 
-    // ===== Материя (микро-единицы) =====
-    private long grayMicro = 0L;
-    private long blueMicro = 0L;
-    private long goldMicro = 0L;
+    // ===== Материя (микро-единицы, единая) =====
+    private long matterMicro = 0L;
+
+    /**
+     * «Призрачный» слот: показывает иконку выбранного рецепта в GUI.
+     * Не является настоящим инвентарём — только отображение.
+     * Синхронизируется бесплатно, т.к. стеки слотов шлются клиенту автоматически.
+     */
+    private final ItemStackHandler displayInventory = new ItemStackHandler(1);
+
+    // ===== Состояние машины =====
+    private Mode mode = Mode.SCAN;
+    private int progress = 0;
+    private int maxProgress = SCAN_TICKS;
+
+    /** Машина работает только когда running=true. Новый блок стоит остановленным. */
+    private boolean running = false;
+
+    /** Изученные рецепты: идентификатор предмета -> стоимость в микро-серых. */
+    private final Map<Identifier, Long> knownRecipes = new HashMap<>();
+
+    /** Выбранный рецепт для сборки (null — ничего не выбрано). */
+    @Nullable
+    private Identifier selectedRecipe = null;
 
     public MaterializerBlockEntity(BlockPos pos, BlockState state) {
         super(QuantX.MATERIALIZER_BE.get(), pos, state);
@@ -61,112 +106,284 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
         return inventory;
     }
 
-    // ===== Геттеры материи =====
+    /** Инвентарь-призрак с иконкой выбранного рецепта. */
+    public ItemStackHandler getDisplayInventory() {
+        return displayInventory;
+    }
 
-    public long getGrayMicro() { return grayMicro; }
-    public long getBlueMicro() { return blueMicro; }
-    public long getGoldMicro() { return goldMicro; }
+    // ===== Режим и прогресс =====
 
-    public long getMatterMicro(MatterTier tier) {
-        return switch (tier) {
-            case GRAY -> grayMicro;
-            case BLUE -> blueMicro;
-            case GOLD -> goldMicro;
+    public Mode getMode() {
+        return mode;
+    }
+
+    public void setMode(Mode mode) {
+        if (this.mode == mode) return;
+        this.mode = mode;
+        // При смене режима прогресс сбрасывается и машина останавливается —
+        // запускать новую операцию нужно кнопкой «Старт».
+        this.progress = 0;
+        this.maxProgress = ticksForMode(mode);
+        this.running = false;
+        setChanged();
+    }
+
+    /** Длительность операции для режима. */
+    public static int ticksForMode(Mode mode) {
+        return switch (mode) {
+            case SCAN -> SCAN_TICKS;
+            case DEMATERIALIZE -> DEMATERIALIZE_TICKS;
+            case MATERIALIZE -> MATERIALIZE_TICKS;
         };
     }
 
-    public long getTotalGrayEquivalent() {
-        return grayMicro
-                + blueMicro * MatterTier.BLUE.getWeightInGray()
-                + goldMicro * MatterTier.GOLD.getWeightInGray();
+    public boolean isRunning() {
+        return running;
     }
 
-    // ===== Мутаторы материи =====
+    /** Переключить работу (Старт/Стоп из GUI). При остановке прогресс сбрасывается. */
+    public void toggleRunning() {
+        running = !running;
+        if (!running) {
+            progress = 0;
+        }
+        setChanged();
+    }
 
-    public void addMatter(MatterTier tier, long micro) {
+    /** Стоимость выбранного рецепта в микро-серых (0 — не выбран/неизвестен). */
+    public long getSelectedCostMicro() {
+        if (selectedRecipe == null) return 0L;
+        Long cost = knownRecipes.get(selectedRecipe);
+        return cost == null ? 0L : cost;
+    }
+
+    public int getProgress() {
+        return progress;
+    }
+
+    public int getMaxProgress() {
+        return maxProgress;
+    }
+
+    /** Переключить режим по кругу: SCAN -> DEMATERIALIZE -> MATERIALIZE -> SCAN. */
+    public void cycleMode() {
+        Mode[] modes = Mode.values();
+        setMode(modes[(mode.ordinal() + 1) % modes.length]);
+        // Вошли в сборку без выбранного рецепта — берём первый изученный.
+        if (mode == Mode.MATERIALIZE && selectedRecipe == null && !knownRecipes.isEmpty()) {
+            cycleRecipe(1);
+        }
+    }
+
+    // ===== Изученные рецепты =====
+
+    /** Запомнить предмет и его стоимость (в микро-серых). */
+    public void learnRecipe(Identifier itemId, long costMicro) {
+        knownRecipes.put(itemId, costMicro);
+        // Первый изученный рецепт сразу выбираем — призрачный слот покажет предмет.
+        if (selectedRecipe == null) {
+            setSelectedRecipe(itemId);
+        }
+        setChanged();
+    }
+
+    public boolean isRecipeKnown(Identifier itemId) {
+        return knownRecipes.containsKey(itemId);
+    }
+
+    /** Только для чтения — изменять рецепты через learnRecipe. */
+    public Map<Identifier, Long> getKnownRecipes() {
+        return Collections.unmodifiableMap(knownRecipes);
+    }
+
+    // ===== Выбранный рецепт (для MATERIALIZE) =====
+
+    @Nullable
+    public Identifier getSelectedRecipe() {
+        return selectedRecipe;
+    }
+
+    public void setSelectedRecipe(@Nullable Identifier id) {
+        if (java.util.Objects.equals(this.selectedRecipe, id)) return;
+        this.selectedRecipe = id;
+        // Смена рецепта — останавливаем машину и сбрасываем прогресс.
+        this.progress = 0;
+        this.running = false;
+        updateDisplaySlot();
+        setChanged();
+    }
+
+    /**
+     * Листает выбранный рецепт по списку изученных (в алфавитном порядке id).
+     * direction: +1 — следующий, -1 — предыдущий. По кругу.
+     */
+    public void cycleRecipe(int direction) {
+        if (knownRecipes.isEmpty()) {
+            setSelectedRecipe(null);
+            return;
+        }
+        List<Identifier> ids = new ArrayList<>(knownRecipes.keySet());
+        ids.sort(Identifier::compareTo);
+        int index = (selectedRecipe == null) ? -1 : ids.indexOf(selectedRecipe);
+        int next = Math.floorMod(index + direction, ids.size());
+        setSelectedRecipe(ids.get(next));
+    }
+
+    /** Обновляет иконку призрачного слота под текущий рецепт. */
+    private void updateDisplaySlot() {
+        if (selectedRecipe == null) {
+            displayInventory.setStackInSlot(0, ItemStack.EMPTY);
+            return;
+        }
+        Item item = BuiltInRegistries.ITEM.getValue(selectedRecipe);
+        ItemStack stack = (item == null) ? ItemStack.EMPTY : new ItemStack(item);
+        displayInventory.setStackInSlot(0, stack);
+    }
+
+    /**
+     * Полная остановка машины: running=false и прогресс в ноль.
+     * Вызывается, когда действие режима выполнить нельзя
+     * (пустой вход, нет рецепта/материи, выход не принимает).
+     */
+    private void stop() {
+        running = false;
+        progress = 0;
+        setChanged();
+    }
+
+    // ===== Тик =====
+
+    /**
+     * Вызывается каждый игровой тик тикером блока.
+     * Работаем только на сервере; клиентская сторона ничего не считает.
+     */
+    public static void tick(Level level, BlockPos pos, BlockState state,
+                            MaterializerBlockEntity be) {
+        if (level.isClientSide() || !be.running) return;
+        switch (be.mode) {
+            case SCAN -> be.tickScan(level, pos, state);
+            case DEMATERIALIZE -> be.tickDematerialize(level, pos, state);
+            case MATERIALIZE -> be.tickMaterialize(level, pos, state);
+        }
+    }
+
+    /**
+     * Этап 6в: изучить предмет во входном слоте, записать в knownRecipes.
+     * Сканирование уничтожает 1 предмет, но не даёт материи — только рецепт.
+     * Если предмет уже изучен — ждём, пока его заберут (ничего не делаем).
+     */
+    private void tickScan(Level level, BlockPos pos, BlockState state) {
+        ItemStack input = inventory.getStackInSlot(SLOT_INPUT);
+        if (input.isEmpty()) {
+            stop();
+            return;
+        }
+
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(input.getItem());
+        if (isRecipeKnown(itemId)) {
+            // Уже изучен — повторно не уничтожаем. Стоп, пока не заберут.
+            stop();
+            return;
+        }
+
+        progress++;
+        if (progress >= maxProgress) {
+            progress = 0;
+            learnRecipe(itemId, MatterValues.getCostMicro(input.getItem()));
+            inventory.extractItem(SLOT_INPUT, 1, false);
+            setChanged();
+        }
+    }
+
+    /**
+     * Разобрать предмет из входного слота, добавить материю.
+     * Выход = 75% от стоимости (25% теряется при разборе).
+     */
+    private void tickDematerialize(Level level, BlockPos pos, BlockState state) {
+        ItemStack input = inventory.getStackInSlot(SLOT_INPUT);
+        if (input.isEmpty()) {
+            stop();
+            return;
+        }
+
+        progress++;
+        if (progress >= maxProgress) {
+            progress = 0;
+            long yield = MatterValues.getDematerializeYieldMicro(input.getItem());
+            inventory.extractItem(SLOT_INPUT, 1, false);
+            addMatter(yield);
+            setChanged();
+        }
+    }
+
+    /**
+     * Этап 6г: собрать выбранный изученный предмет из материи в выходной слот.
+     * Работает только если: рецепт выбран и изучен, хватает материи,
+     * выходной слот может принять предмет.
+     */
+    private void tickMaterialize(Level level, BlockPos pos, BlockState state) {
+        if (selectedRecipe == null || !isRecipeKnown(selectedRecipe)) {
+            stop();
+            return;
+        }
+
+        Item item = BuiltInRegistries.ITEM.getValue(selectedRecipe);
+        if (item == null) {
+            stop();
+            return;
+        }
+
+        long cost = knownRecipes.get(selectedRecipe);
+        if (matterMicro < cost) {
+            // Не хватает материи — останавливаемся.
+            stop();
+            return;
+        }
+
+        // Проверяем, что выходной слот сможет принять предмет.
+        // insertItem нельзя: isItemValid запрещает класть в выход (анти-воронка).
+        // Поэтому работаем напрямую: setStackInSlot/grow обходят проверку.
+        ItemStack result = new ItemStack(item);
+        ItemStack out = inventory.getStackInSlot(SLOT_OUTPUT);
+        boolean fits = out.isEmpty()
+                || (ItemStack.isSameItemSameComponents(out, result)
+                        && out.getCount() + result.getCount() <= out.getMaxStackSize());
+        if (!fits) {
+            // Выход не принимает предмет — останавливаемся.
+            stop();
+            return;
+        }
+
+        progress++;
+        if (progress >= maxProgress) {
+            progress = 0;
+            consumeMatter(cost);
+            if (out.isEmpty()) {
+                inventory.setStackInSlot(SLOT_OUTPUT, result);
+            } else {
+                out.grow(result.getCount());
+            }
+            setChanged();
+        }
+    }
+
+    // ===== Материя =====
+
+    public long getMatterMicro() { return matterMicro; }
+
+    /** Добавить материю (в микро-единицах). */
+    public void addMatter(long micro) {
         if (micro <= 0) return;
-        switch (tier) {
-            case GRAY -> grayMicro += micro;
-            case BLUE -> blueMicro += micro;
-            case GOLD -> goldMicro += micro;
-        }
+        matterMicro += micro;
         setChanged();
     }
 
-    private void setMatterMicro(MatterTier tier, long micro) {
-        long safe = Math.max(0, micro);
-        switch (tier) {
-            case GRAY -> grayMicro = safe;
-            case BLUE -> blueMicro = safe;
-            case GOLD -> goldMicro = safe;
-        }
-        setChanged();
-    }
-
-    public boolean consumeGrayEquivalent(long costMicro) {
+    /** Списать материю при сборке. false — не хватает. */
+    public boolean consumeMatter(long costMicro) {
         if (costMicro <= 0) return true;
-        if (getTotalGrayEquivalent() < costMicro) return false;
-
-        long remaining = costMicro;
-
-        long fromGray = Math.min(grayMicro, remaining);
-        grayMicro -= fromGray;
-        remaining -= fromGray;
-
-        if (remaining > 0) {
-            long blueWeight = MatterTier.BLUE.getWeightInGray();
-            long blueNeeded = (remaining + blueWeight - 1) / blueWeight;
-            long blueToUse = Math.min(blueMicro, blueNeeded);
-            long grayFromBlue = blueToUse * blueWeight;
-            blueMicro -= blueToUse;
-            if (grayFromBlue > remaining) {
-                grayMicro += (grayFromBlue - remaining);
-            }
-            remaining = 0;
-        }
-
-        if (remaining > 0) {
-            long goldWeight = MatterTier.GOLD.getWeightInGray();
-            long goldNeeded = (remaining + goldWeight - 1) / goldWeight;
-            long goldToUse = Math.min(goldMicro, goldNeeded);
-            long grayFromGold = goldToUse * goldWeight;
-            goldMicro -= goldToUse;
-            if (grayFromGold > remaining) {
-                grayMicro += (grayFromGold - remaining);
-            }
-        }
-
+        if (matterMicro < costMicro) return false;
+        matterMicro -= costMicro;
         setChanged();
-        return true;
-    }
-
-    public boolean convertUp(MatterTier from) {
-        MatterTier to = from.nextTier();
-        if (to == null) return false;
-
-        long ratio = to.getWeightInGray() / from.getWeightInGray();
-        long costMicro = ratio * MatterTier.MICRO_PER_UNIT;
-        long available = getMatterMicro(from);
-
-        if (available < costMicro) return false;
-
-        setMatterMicro(from, available - costMicro);
-        addMatter(to, MatterTier.MICRO_PER_UNIT);
-        return true;
-    }
-
-    public boolean convertDown(MatterTier from) {
-        MatterTier to = from.previousTier();
-        if (to == null) return false;
-
-        long available = getMatterMicro(from);
-        if (available < MatterTier.MICRO_PER_UNIT) return false;
-
-        long ratio = from.getWeightInGray() / to.getWeightInGray();
-        long resultMicro = (ratio * MatterTier.MICRO_PER_UNIT) / 2;
-
-        setMatterMicro(from, available - MatterTier.MICRO_PER_UNIT);
-        addMatter(to, resultMicro);
         return true;
     }
 
@@ -176,9 +393,23 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
 
-        output.putLong("GrayMicro", grayMicro);
-        output.putLong("BlueMicro", blueMicro);
-        output.putLong("GoldMicro", goldMicro);
+        output.putLong("MatterMicro", matterMicro);
+
+        output.putInt("Mode", mode.ordinal());
+        output.putInt("Progress", progress);
+        output.putInt("MaxProgress", maxProgress);
+        output.putBoolean("Running", running);
+
+        // Изученные рецепты: ключ — строка вида "minecraft:iron_ingot", значение — long.
+        CompoundTag recipesTag = new CompoundTag();
+        for (Map.Entry<Identifier, Long> entry : knownRecipes.entrySet()) {
+            recipesTag.putLong(entry.getKey().toString(), entry.getValue());
+        }
+        output.store("KnownRecipes", CompoundTag.CODEC, recipesTag);
+
+        if (selectedRecipe != null) {
+            output.store("SelectedRecipe", Codec.STRING, selectedRecipe.toString());
+        }
 
         // Инвентарь сохраняем как CompoundTag через HolderLookup.Provider.
         HolderLookup.Provider registries = level != null ? level.registryAccess() : null;
@@ -192,9 +423,34 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
 
-        grayMicro = input.getLongOr("GrayMicro", 0L);
-        blueMicro = input.getLongOr("BlueMicro", 0L);
-        goldMicro = input.getLongOr("GoldMicro", 0L);
+        // Единая материя; миграция старых тиров в эквивалент (x10/x100).
+        matterMicro = input.getLongOr("MatterMicro",
+                input.getLongOr("GrayMicro", 0L)
+                        + input.getLongOr("BlueMicro", 0L) * 10
+                        + input.getLongOr("GoldMicro", 0L) * 100);
+
+        int modeOrdinal = input.getIntOr("Mode", 0);
+        Mode[] modes = Mode.values();
+        mode = (modeOrdinal >= 0 && modeOrdinal < modes.length)
+                ? modes[modeOrdinal]
+                : Mode.SCAN;
+        progress = input.getIntOr("Progress", 0);
+        maxProgress = input.getIntOr("MaxProgress", ticksForMode(mode));
+        running = input.getBooleanOr("Running", false);
+
+        knownRecipes.clear();
+        input.read("KnownRecipes", CompoundTag.CODEC).ifPresent(recipesTag -> {
+            for (String key : recipesTag.keySet()) {
+                Identifier id = Identifier.tryParse(key);
+                if (id == null) continue;
+                recipesTag.getLong(key).ifPresent(cost -> knownRecipes.put(id, cost));
+            }
+        });
+
+        selectedRecipe = input.read("SelectedRecipe", Codec.STRING)
+                .map(Identifier::tryParse)
+                .orElse(null);
+        updateDisplaySlot();
 
         HolderLookup.Provider registries = level != null ? level.registryAccess() : null;
         if (registries != null) {
@@ -203,7 +459,7 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
         }
     }
 
-    // ===== MenuProvider (заглушка — GUI добавим на подшаге 5б) =====
+    // ===== MenuProvider =====
 
     @Override
     public Component getDisplayName() {
@@ -213,7 +469,6 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
     @Nullable
     @Override
     public AbstractContainerMenu createMenu(int windowId, Inventory playerInv, Player player) {
-        // Пока возвращаем null — на подшаге 5б создадим MaterializerMenu.
-        return null;
+        return new ru.justsmile.quantx.menu.MaterializerMenu(windowId, playerInv, this);
     }
 }
