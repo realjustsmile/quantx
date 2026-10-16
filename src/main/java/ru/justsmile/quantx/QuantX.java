@@ -10,6 +10,7 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.eventbus.api.bus.BusGroup;
@@ -21,6 +22,8 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
+import ru.justsmile.quantx.block.MaterializerBlock;
+import ru.justsmile.quantx.block.MaterializerBlockEntity;
 
 @Mod(QuantX.MODID)
 public class QuantX {
@@ -32,8 +35,9 @@ public class QuantX {
             DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
     public static final DeferredRegister<Block> BLOCKS =
             DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
+            DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, MODID);
 
-    // Вспомогательные методы для создания ключей
     public static ResourceKey<Item> itemKey(String name) {
         return ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(MODID, name));
     }
@@ -42,21 +46,23 @@ public class QuantX {
         return ResourceKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(MODID, name));
     }
 
-    // Наш первый предмет
-    public static final RegistryObject<Item> MY_ITEM = ITEMS.register("my_item",
-            () -> new Item(new Item.Properties().setId(itemKey("my_item"))));
+    public static final RegistryObject<Block> MATERIALIZER = BLOCKS.register("materializer",
+            () -> new MaterializerBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.STONE)
+                    .setId(blockKey("materializer"))));
+    public static final RegistryObject<Item> MATERIALIZER_ITEM = ITEMS.register("materializer",
+            () -> new BlockItem(MATERIALIZER.get(), new Item.Properties().setId(itemKey("materializer"))));
 
-    // Наш первый блок + его предмет-версия
-    public static final RegistryObject<Block> MY_BLOCK = BLOCKS.register("my_block",
-            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.STONE).setId(blockKey("my_block"))));
-    public static final RegistryObject<Item> MY_BLOCK_ITEM = ITEMS.register("my_block",
-            () -> new BlockItem(MY_BLOCK.get(), new Item.Properties().setId(itemKey("my_block"))));
+    public static final RegistryObject<BlockEntityType<MaterializerBlockEntity>> MATERIALIZER_BE =
+            BLOCK_ENTITIES.register("materializer",
+                    () -> new BlockEntityType<>(MaterializerBlockEntity::new,
+                            java.util.Set.of(MATERIALIZER.get())));
 
     public QuantX(FMLJavaModLoadingContext context) {
         BusGroup modBusGroup = context.getModBusGroup();
 
         ITEMS.register(modBusGroup);
         BLOCKS.register(modBusGroup);
+        BLOCK_ENTITIES.register(modBusGroup);
 
         FMLCommonSetupEvent.getBus(modBusGroup).addListener(this::commonSetup);
         BusGroup.DEFAULT.register(MethodHandles.lookup(), this);
@@ -69,11 +75,8 @@ public class QuantX {
 
     @SubscribeEvent
     public void addCreative(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
-            event.accept(MY_ITEM);
-        }
         if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
-            event.accept(MY_BLOCK_ITEM);
+            event.accept(MATERIALIZER_ITEM);
         }
     }
 }

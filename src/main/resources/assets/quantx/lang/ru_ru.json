@@ -1,5 +1,4 @@
 {
-  "item.quantx.my_item": "Мой предмет",
-  "item.quantx.my_block": "Мой блок",
-  "block.quantx.my_block": "Мой блок"
+  "block.quantx.materializer": "Материализатор",
+  "item.quantx.materializer": "Материализатор"
 }

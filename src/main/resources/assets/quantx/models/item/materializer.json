@@ -1,6 +1,6 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "quantx:item/my_item"
+    "layer0": "quantx:block/materializer"
   }
 }

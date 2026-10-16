@@ -1,5 +1,4 @@
 {
-  "item.quantx.my_item": "My Item",
-  "item.quantx.my_block": "My Block",
-  "block.quantx.my_block": "My Block"
+  "block.quantx.materializer": "Materializer",
+  "item.quantx.materializer": "Materializer"
 }
