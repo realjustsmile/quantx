@@ -1,6 +1,12 @@
 {
   "variants": {
-    "active=false": { "model": "quantx:block/materializer" },
-    "active=true": { "model": "quantx:block/materializer" }
+    "active=false,facing=east": { "model": "quantx:block/materializer", "y": 90 },
+    "active=false,facing=north": { "model": "quantx:block/materializer" },
+    "active=false,facing=south": { "model": "quantx:block/materializer", "y": 180 },
+    "active=false,facing=west": { "model": "quantx:block/materializer", "y": 270 },
+    "active=true,facing=east": { "model": "quantx:block/materializer", "y": 90 },
+    "active=true,facing=north": { "model": "quantx:block/materializer" },
+    "active=true,facing=south": { "model": "quantx:block/materializer", "y": 180 },
+    "active=true,facing=west": { "model": "quantx:block/materializer", "y": 270 }
   }
 }

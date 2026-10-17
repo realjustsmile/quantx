@@ -23,6 +23,13 @@
   "item.quantx.punch_card.written": "Recorded %s recipe(s)",
   "item.quantx.punch_card.transferred": "Transferred %s recipe(s). The card degraded into %s",
 
+  "item.quantx.matter_gun": "Matter Gun",
+  "item.quantx.matter_gun.desc": "Hold RMB on a block to dematerialize it into stored matter. Shift+Right-click a Materializer to transfer it.",
+  "item.quantx.matter_gun.matter": "Matter: %s / %s",
+  "item.quantx.matter_gun.empty": "The gun's matter tank is empty",
+  "item.quantx.matter_gun.full": "The gun's matter tank is full",
+  "item.quantx.matter_gun.transferred": "Transferred %s matter to the materializer",
+
   "tooltip.quantx.matter_cost": "Matter cost: %s",
   "tooltip.quantx.matter_yield": "Dematerialize yield: %s",
 

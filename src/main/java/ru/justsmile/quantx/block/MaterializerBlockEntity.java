@@ -75,7 +75,13 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
 
         @Override
         public int getSlotLimit(int slot) {
-            return 64;
+            return 64 * 16;
+        }
+
+        @Override
+        protected int getStackLimit(int slot, @NotNull ItemStack stack) {
+            // Расширенные стеки: слот вмещает 16 максимальных стаков предмета.
+            return stack.getMaxStackSize() * 16;
         }
     };
 
@@ -443,7 +449,7 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
         ItemStack out = inventory.getStackInSlot(SLOT_OUTPUT);
         boolean fits = out.isEmpty()
                 || (ItemStack.isSameItemSameComponents(out, result)
-                        && out.getCount() + result.getCount() <= out.getMaxStackSize());
+                        && out.getCount() + result.getCount() <= out.getMaxStackSize() * 16);
         if (!fits) {
             // Выход не принимает предмет — останавливаемся.
             stop();

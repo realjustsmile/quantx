@@ -16,7 +16,10 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 import ru.justsmile.quantx.QuantX;
@@ -27,14 +30,26 @@ public class MaterializerBlock extends Block implements EntityBlock {
     /** Работает ли машина — синхронизируется клиенту для частиц. */
     public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
 
+    /** Лицевая сторона — ставится к игроку (как у печки). */
+    public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
+
     public MaterializerBlock(Properties properties) {
         super(properties);
-        registerDefaultState(defaultBlockState().setValue(ACTIVE, false));
+        registerDefaultState(defaultBlockState()
+                .setValue(ACTIVE, false)
+                .setValue(FACING, Direction.NORTH));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(ACTIVE);
+        builder.add(ACTIVE, FACING);
+    }
+
+    /** При установке фронт смотрит на игрока (как печка: opposite от взгляда). */
+    @Override
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        return defaultBlockState()
+                .setValue(FACING, context.getHorizontalDirection().getOpposite());
     }
 
     /**

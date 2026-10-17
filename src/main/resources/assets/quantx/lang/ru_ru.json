@@ -23,8 +23,15 @@
   "item.quantx.punch_card.written": "Записано рецептов: %s",
   "item.quantx.punch_card.transferred": "Перенесено рецептов: %s. Карта деградировала: %s",
 
+  "item.quantx.matter_gun": "Материальная пушка",
+  "item.quantx.matter_gun.desc": "Держите ПКМ по блоку — разберёт его в материю. Shift+ПКМ по материализатору — слить материю в него.",
+  "item.quantx.matter_gun.matter": "Материя: %s / %s",
+  "item.quantx.matter_gun.empty": "Бак пушки пуст",
+  "item.quantx.matter_gun.full": "Бак пушки полон",
+  "item.quantx.matter_gun.transferred": "Передано в материализатор: %s материи",
+
   "tooltip.quantx.matter_cost": "Стоимость: %s материи",
-  "tooltip.quantx.matter_yield": "Разбор даст: %s",
+  "tooltip.quantx.matter_yield": "%s",
 
   "advancement.quantx.root.title": "QuantX",
   "advancement.quantx.root.desc": "Создайте материализатор",

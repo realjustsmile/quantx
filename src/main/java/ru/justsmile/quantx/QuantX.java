@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -12,10 +13,12 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.component.UseEffects;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.common.util.LazyOptional;
@@ -28,12 +31,15 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
 import ru.justsmile.quantx.block.MaterializerBlock;
 import ru.justsmile.quantx.block.MaterializerBlockEntity;
+import ru.justsmile.quantx.client.QuantXClient;
+import ru.justsmile.quantx.item.MatterGunItem;
 import ru.justsmile.quantx.item.PunchCardItem;
 import ru.justsmile.quantx.matter.MatterValues;
 import ru.justsmile.quantx.menu.MaterializerMenu;
@@ -83,6 +89,13 @@ public class QuantX {
             () -> new PunchCardItem(new Item.Properties()
                     .setId(itemKey("punch_card")).stacksTo(1)));
 
+    /** Материальная пушка — ручной дематериализатор. Хранит материю, сливает в машину. */
+    public static final RegistryObject<Item> MATTER_GUN = ITEMS.register("matter_gun",
+            () -> new MatterGunItem(new Item.Properties()
+                    .setId(itemKey("matter_gun")).stacksTo(1)
+                    // Без замедления при удержании ПКМ (дефолт: speed 0.2, no sprint).
+                    .component(DataComponents.USE_EFFECTS, new UseEffects(true, true, 1.0F))));
+
     public QuantX(FMLJavaModLoadingContext context) {
         BusGroup modBusGroup = context.getModBusGroup();
 
@@ -91,6 +104,12 @@ public class QuantX {
         BLOCK_ENTITIES.register(modBusGroup);
         MENUS.register(modBusGroup);
         QuantXTriggers.TRIGGERS.register(modBusGroup);
+
+        // HUD-слои регистрируем уже сейчас: AddGuiOverlayLayersEvent отстреливает
+        // при создании Hud внутри Minecraft.<init> — раньше FMLClientSetupEvent.
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            QuantXClient.registerOverlays();
+        }
 
         FMLCommonSetupEvent.getBus(modBusGroup).addListener(this::commonSetup);
         FMLClientSetupEvent.getBus(modBusGroup).addListener(this::clientSetup);
@@ -156,6 +175,7 @@ public class QuantX {
         }
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(PUNCH_CARD);
+            event.accept(MATTER_GUN);
         }
     }
 }

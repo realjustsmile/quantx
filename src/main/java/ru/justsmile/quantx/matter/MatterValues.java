@@ -187,6 +187,8 @@ public final class MatterValues {
             Map.entry(Items.EMERALD, 200_000L),
             Map.entry(Items.ANCIENT_DEBRIS, 800_000L),
             Map.entry(Items.NETHERITE_SCRAP, 900_000L),
+            // Якорь пользователя: незеритовый слиток = 4000 ед. материи.
+            Map.entry(Items.NETHERITE_INGOT, 40_000L),
             Map.entry(Items.PRISMARINE_SHARD, 2_000L),
             Map.entry(Items.PRISMARINE_CRYSTALS, 2_000L),
             Map.entry(Items.NAUTILUS_SHELL, 50_000L),

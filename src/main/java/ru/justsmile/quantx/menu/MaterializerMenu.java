@@ -76,7 +76,11 @@ public class MaterializerMenu extends AbstractContainerMenu {
     // ===== Геттеры материи (для Screen) =====
 
     public long getMatterMicro() {
-        return MatterContainerData.packLong(matterData.get(0), matterData.get(1));
+        return MatterContainerData.packLong(
+                matterData.get(MatterContainerData.IDX_MATTER),
+                matterData.get(MatterContainerData.IDX_MATTER + 1),
+                matterData.get(MatterContainerData.IDX_MATTER + 2),
+                matterData.get(MatterContainerData.IDX_MATTER + 3));
     }
 
     @Nullable
@@ -105,8 +109,10 @@ public class MaterializerMenu extends AbstractContainerMenu {
     /** Стоимость выбранного рецепта в микро-серых (0 — не выбран). */
     public long getSelectedCostMicro() {
         return MatterContainerData.packLong(
-                matterData.get(MatterContainerData.IDX_COST_HIGH),
-                matterData.get(MatterContainerData.IDX_COST_LOW));
+                matterData.get(MatterContainerData.IDX_COST),
+                matterData.get(MatterContainerData.IDX_COST + 1),
+                matterData.get(MatterContainerData.IDX_COST + 2),
+                matterData.get(MatterContainerData.IDX_COST + 3));
     }
 
     /** Машина запущена (Старт/Стоп). */

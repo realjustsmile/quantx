@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "minecraft:iron_ingot",
+    "minecraft:iron_ingot",
+    "minecraft:iron_ingot",
+    "minecraft:iron_ingot",
+    "minecraft:redstone",
+    "minecraft:redstone",
+    "minecraft:diamond"
+  ],
+  "result": {
+    "id": "quantx:matter_gun",
+    "count": 1
+  }
+}
