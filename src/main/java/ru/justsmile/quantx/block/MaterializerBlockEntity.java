@@ -6,12 +6,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -23,11 +27,13 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.justsmile.quantx.QuantX;
 import ru.justsmile.quantx.matter.MatterValues;
+import ru.justsmile.quantx.trigger.QuantXTriggers;
 
 /**
  * Блок-материализатор. Хранит материю как числа (микро-единицы)
@@ -73,6 +79,45 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
         }
     };
 
+    /**
+     * Представление инвентаря для автоматики (воронки, трубы других модов).
+     * Вставка — только во входной слот, извлечение — только из выходного.
+     * Направление стороны не учитываем: у машины нет ориентации.
+     */
+    private final IItemHandler automationHandler = new IItemHandler() {
+        @Override
+        public int getSlots() {
+            return inventory.getSlots();
+        }
+
+        @Override
+        public @NotNull ItemStack getStackInSlot(int slot) {
+            return inventory.getStackInSlot(slot);
+        }
+
+        @Override
+        public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
+            if (slot != SLOT_INPUT) return stack;
+            return inventory.insertItem(slot, stack, simulate);
+        }
+
+        @Override
+        public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
+            if (slot != SLOT_OUTPUT) return ItemStack.EMPTY;
+            return inventory.extractItem(slot, amount, simulate);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return inventory.getSlotLimit(slot);
+        }
+
+        @Override
+        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+            return inventory.isItemValid(slot, stack);
+        }
+    };
+
     // ===== Материя (микро-единицы, единая) =====
     private long matterMicro = 0L;
 
@@ -91,6 +136,13 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
     /** Машина работает только когда running=true. Новый блок стоит остановленным. */
     private boolean running = false;
 
+    /**
+     * Последний взаимодействовавший игрок — для ачивок.
+     * Не сохраняется: сессионное значение, достаточное для триггеров.
+     */
+    @Nullable
+    private UUID lastUser = null;
+
     /** Изученные рецепты: идентификатор предмета -> стоимость в микро-серых. */
     private final Map<Identifier, Long> knownRecipes = new HashMap<>();
 
@@ -104,6 +156,31 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
 
     public ItemStackHandler getInventory() {
         return inventory;
+    }
+
+    /**
+     * Хендлер для автоматики (ForgeCapabilities.ITEM_HANDLER).
+     * Вставка только во вход, извлечение только из выхода.
+     */
+    public IItemHandler getAutomationHandler() {
+        return automationHandler;
+    }
+
+    /** Запомнить игрока, чтобы ачивки улетали именно ему. */
+    public void setLastUser(@Nullable UUID user) {
+        this.lastUser = user;
+    }
+
+    /**
+     * Выстрелить триггер достижения последнему пользователю машины,
+     * если он сейчас на сервере. Молча пропускаем, если игрока нет.
+     */
+    private void fireTrigger(QuantXTriggers.SimpleTrigger trigger) {
+        if (level == null || level.getServer() == null || lastUser == null) return;
+        ServerPlayer player = level.getServer().getPlayerList().getPlayer(lastUser);
+        if (player != null) {
+            trigger.fire(player);
+        }
     }
 
     /** Инвентарь-призрак с иконкой выбранного рецепта. */
@@ -296,6 +373,9 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
             progress = 0;
             learnRecipe(itemId, MatterValues.getCostMicro(input.getItem()));
             inventory.extractItem(SLOT_INPUT, 1, false);
+            level.playSound(null, pos, SoundEvents.ENCHANTMENT_TABLE_USE,
+                    SoundSource.BLOCKS, 1.0f, 1.0f);
+            fireTrigger(QuantXTriggers.SCANNED.get());
             setChanged();
         }
     }
@@ -317,6 +397,9 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
             long yield = MatterValues.getDematerializeYieldMicro(input.getItem());
             inventory.extractItem(SLOT_INPUT, 1, false);
             addMatter(yield);
+            level.playSound(null, pos, SoundEvents.FIRE_EXTINGUISH,
+                    SoundSource.BLOCKS, 0.4f, 1.2f);
+            fireTrigger(QuantXTriggers.DEMATERIALIZED.get());
             setChanged();
         }
     }
@@ -368,6 +451,9 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
             } else {
                 out.grow(result.getCount());
             }
+            level.playSound(null, pos, SoundEvents.END_PORTAL_FRAME_FILL,
+                    SoundSource.BLOCKS, 0.7f, 1.3f);
+            fireTrigger(QuantXTriggers.MATERIALIZED.get());
             setChanged();
         }
     }

@@ -1,4 +1,39 @@
 {
   "block.quantx.materializer": "Материализатор",
-  "item.quantx.materializer": "Материализатор"
+  "item.quantx.materializer": "Материализатор",
+
+  "gui.quantx.materializer.mode": "Режим: %s",
+  "gui.quantx.materializer.mode.scan": "Сканирование",
+  "gui.quantx.materializer.mode.dematerialize": "Разбор",
+  "gui.quantx.materializer.mode.materialize": "Сборка",
+  "gui.quantx.materializer.mode.unknown": "?",
+  "gui.quantx.materializer.cost": "Цена: %s",
+  "gui.quantx.materializer.matter": "Материя: %s",
+
+  "gui.quantx.materializer.tooltip.mode": "Переключить режим работы",
+  "gui.quantx.materializer.tooltip.start_stop": "Запустить/остановить работу",
+  "gui.quantx.materializer.tooltip.prev_recipe": "Предыдущий рецепт",
+  "gui.quantx.materializer.tooltip.next_recipe": "Следующий рецепт",
+
+  "item.quantx.punch_card": "Перфокарта",
+  "item.quantx.punch_card.desc": "Shift+ПКМ по материализатору — записать или загрузить рецепты. Одноразовая.",
+  "item.quantx.punch_card.empty": "Пустая",
+  "item.quantx.punch_card.recipes": "Записано рецептов: %s",
+  "item.quantx.punch_card.nothing_to_write": "Материализатор не знает ни одного рецепта",
+  "item.quantx.punch_card.written": "Записано рецептов: %s",
+  "item.quantx.punch_card.transferred": "Перенесено рецептов: %s. Карта деградировала: %s",
+
+  "tooltip.quantx.matter_cost": "Стоимость: %s материи",
+  "tooltip.quantx.matter_yield": "Разбор даст: %s",
+
+  "advancement.quantx.root.title": "QuantX",
+  "advancement.quantx.root.desc": "Создайте материализатор",
+  "advancement.quantx.scan.title": "Познай материю",
+  "advancement.quantx.scan.desc": "Изучите рецепт сканированием предмета",
+  "advancement.quantx.demat.title": "В прах",
+  "advancement.quantx.demat.desc": "Разберите предмет в чистую материю",
+  "advancement.quantx.mat.title": "Из ничего",
+  "advancement.quantx.mat.desc": "Соберите изученный предмет из материи",
+  "advancement.quantx.card.title": "Портативное знание",
+  "advancement.quantx.card.desc": "Получите перфокарту"
 }

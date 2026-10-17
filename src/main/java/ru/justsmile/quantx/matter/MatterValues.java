@@ -51,4 +51,15 @@ public final class MatterValues {
     public static boolean isKnown(Item item) {
         return VALUES.containsKey(item);
     }
+
+    /**
+     * Форматирует микро-единицы в читаемые единицы материи:
+     * 1500000 → "1.500", 100 → "0.000100".
+     */
+    public static String formatMicro(long micro) {
+        double units = micro / (double) MICRO_PER_UNIT;
+        if (units >= 1000) return String.format("%.2f", units);
+        if (units >= 1) return String.format("%.3f", units);
+        return String.format("%.6f", units);
+    }
 }

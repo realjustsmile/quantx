@@ -44,7 +44,7 @@ public class MaterializerScreen extends AbstractContainerScreen<MaterializerMenu
                 b -> sendButton(MaterializerMenu.BTN_CYCLE_MODE))
                 .pos(leftPos + 8, topPos + 44).size(100, 11).build());
         modeButton.setTooltip(Tooltip.create(
-                Component.literal("Переключить режим работы")));
+                Component.translatable("gui.quantx.materializer.tooltip.mode")));
 
         // Старт/Стоп — квадратная, в промежутке между выходом (x84-102)
         // и призрачным слотом рецепта (x142-160). Рамка-индикатор вокруг — в render.
@@ -52,17 +52,19 @@ public class MaterializerScreen extends AbstractContainerScreen<MaterializerMenu
                 b -> sendButton(MaterializerMenu.BTN_START_STOP))
                 .pos(leftPos + 112, topPos + 21).size(18, 18).build());
         startButton.setTooltip(Tooltip.create(
-                Component.literal("Запустить/остановить работу")));
+                Component.translatable("gui.quantx.materializer.tooltip.start_stop")));
 
         // Листание рецептов — по центру под призрачным слотом (ячейка x142-160).
         Button prev = addRenderableWidget(Button.builder(Component.literal("<"),
                 b -> sendButton(MaterializerMenu.BTN_PREV_RECIPE))
                 .pos(leftPos + 133, topPos + 44).size(16, 11).build());
-        prev.setTooltip(Tooltip.create(Component.literal("Предыдущий рецепт")));
+        prev.setTooltip(Tooltip.create(
+                Component.translatable("gui.quantx.materializer.tooltip.prev_recipe")));
         Button next = addRenderableWidget(Button.builder(Component.literal(">"),
                 b -> sendButton(MaterializerMenu.BTN_NEXT_RECIPE))
                 .pos(leftPos + 151, topPos + 44).size(16, 11).build());
-        next.setTooltip(Tooltip.create(Component.literal("Следующий рецепт")));
+        next.setTooltip(Tooltip.create(
+                Component.translatable("gui.quantx.materializer.tooltip.next_recipe")));
 
     }
 
@@ -73,14 +75,15 @@ public class MaterializerScreen extends AbstractContainerScreen<MaterializerMenu
         }
     }
 
-    /** Русское название режима для строки состояния. */
-    private static String modeName(int ordinal) {
+    /** Ключ локализации режима для кнопки. */
+    private static String modeKey(int ordinal) {
         MaterializerBlockEntity.Mode[] modes = MaterializerBlockEntity.Mode.values();
-        if (ordinal < 0 || ordinal >= modes.length) return "?";
+        if (ordinal < 0 || ordinal >= modes.length)
+            return "gui.quantx.materializer.mode.unknown";
         return switch (modes[ordinal]) {
-            case SCAN -> "Сканирование";
-            case DEMATERIALIZE -> "Разбор";
-            case MATERIALIZE -> "Сборка";
+            case SCAN -> "gui.quantx.materializer.mode.scan";
+            case DEMATERIALIZE -> "gui.quantx.materializer.mode.dematerialize";
+            case MATERIALIZE -> "gui.quantx.materializer.mode.materialize";
         };
     }
 
@@ -94,14 +97,16 @@ public class MaterializerScreen extends AbstractContainerScreen<MaterializerMenu
         super.extractRenderState(gfx, mouseX, mouseY, partialTick);
 
         // 3. Кнопка режима показывает текущий режим.
-        modeButton.setMessage(Component.literal("Режим: " + modeName(menu.getModeOrdinal())));
+        modeButton.setMessage(Component.translatable("gui.quantx.materializer.mode",
+                Component.translatable(modeKey(menu.getModeOrdinal()))));
 
         // 3б. Стоимость выбранного рецепта — под кнопками листания.
         //     Красная, если материи не хватает на сборку.
         long costMicro = menu.getSelectedCostMicro();
         if (costMicro > 0) {
             int color = menu.getMatterMicro() >= costMicro ? 0xFFAAAAAA : 0xFFFF5555;
-            gfx.text(font, Component.literal("Цена: " + formatMicro(costMicro)),
+            gfx.text(font, Component.translatable("gui.quantx.materializer.cost",
+                            MatterValues.formatMicro(costMicro)),
                     leftPos + 104, topPos + 58, color, false);
         }
 
@@ -115,7 +120,8 @@ public class MaterializerScreen extends AbstractContainerScreen<MaterializerMenu
 
         // 5. Материя единая: одна строка с бирюзовой меткой.
         gfx.fill(leftPos + 10, topPos + 69, leftPos + 16, topPos + 75, 0xFF55DDCC);
-        gfx.text(font, Component.literal("Материя: " + formatMicro(menu.getMatterMicro())),
+        gfx.text(font, Component.translatable("gui.quantx.materializer.matter",
+                        MatterValues.formatMicro(menu.getMatterMicro())),
                 leftPos + 20, topPos + 68, 0xFF7FE8D4, false);
 
         // 6. Рамка-индикатор вокруг Старт/Стоп (3px):
@@ -177,12 +183,5 @@ public class MaterializerScreen extends AbstractContainerScreen<MaterializerMenu
             gfx.fill(x + col * 2, y + 5 - half,
                     x + col * 2 + 2, y + 5 + half, color);
         }
-    }
-
-    private static String formatMicro(long micro) {
-        double units = micro / (double) MatterValues.MICRO_PER_UNIT;
-        if (units >= 1000) return String.format("%.2f", units);
-        if (units >= 1) return String.format("%.3f", units);
-        return String.format("%.6f", units);
     }
 }

@@ -1,0 +1,29 @@
+{
+  "parent": "quantx:root",
+  "display": {
+    "icon": {
+      "id": "minecraft:diamond"
+    },
+    "title": {
+      "translate": "advancement.quantx.mat.title"
+    },
+    "description": {
+      "translate": "advancement.quantx.mat.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "materialized": {
+      "trigger": "quantx:materialized",
+      "conditions": {}
+    }
+  },
+  "requirements": [
+    [
+      "materialized"
+    ]
+  ]
+}

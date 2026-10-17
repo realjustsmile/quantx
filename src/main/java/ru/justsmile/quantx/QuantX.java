@@ -5,6 +5,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Set;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.inventory.MenuType;
@@ -15,8 +16,12 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.extensions.IForgeMenuType;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.eventbus.api.bus.BusGroup;
 import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -29,8 +34,11 @@ import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
 import ru.justsmile.quantx.block.MaterializerBlock;
 import ru.justsmile.quantx.block.MaterializerBlockEntity;
+import ru.justsmile.quantx.item.PunchCardItem;
+import ru.justsmile.quantx.matter.MatterValues;
 import ru.justsmile.quantx.menu.MaterializerMenu;
 import ru.justsmile.quantx.menu.MaterializerScreen;
+import ru.justsmile.quantx.trigger.QuantXTriggers;
 
 @Mod(QuantX.MODID)
 public class QuantX {
@@ -70,6 +78,11 @@ public class QuantX {
             MENUS.register("materializer",
                     () -> IForgeMenuType.create(MaterializerMenu::new));
 
+    /** Перфокарта — перенос изученных рецептов. В стаке 1 шт., хранит данные. */
+    public static final RegistryObject<Item> PUNCH_CARD = ITEMS.register("punch_card",
+            () -> new PunchCardItem(new Item.Properties()
+                    .setId(itemKey("punch_card")).stacksTo(1)));
+
     public QuantX(FMLJavaModLoadingContext context) {
         BusGroup modBusGroup = context.getModBusGroup();
 
@@ -77,10 +90,46 @@ public class QuantX {
         BLOCKS.register(modBusGroup);
         BLOCK_ENTITIES.register(modBusGroup);
         MENUS.register(modBusGroup);
+        QuantXTriggers.TRIGGERS.register(modBusGroup);
 
         FMLCommonSetupEvent.getBus(modBusGroup).addListener(this::commonSetup);
         FMLClientSetupEvent.getBus(modBusGroup).addListener(this::clientSetup);
         BusGroup.DEFAULT.register(MethodHandles.lookup(), this);
+    }
+
+    /**
+     * Подключаем ITEM_HANDLER к каждому материализатору:
+     * вставка только во вход, извлечение только из выхода.
+     */
+    @SubscribeEvent
+    private static void attachMaterializerCaps(AttachCapabilitiesEvent.BlockEntities event) {
+        if (!(event.getObject() instanceof MaterializerBlockEntity be)) return;
+        event.addCapability(
+                Identifier.fromNamespaceAndPath(MODID, "inventory"),
+                // getCapability generic — лямбдой не реализовать, нужен класс.
+                new net.minecraftforge.common.capabilities.ICapabilityProvider() {
+                    @Override
+                    public <T> LazyOptional<T> getCapability(
+                            net.minecraftforge.common.capabilities.Capability<T> cap,
+                            net.minecraft.core.Direction side) {
+                        if (cap == ForgeCapabilities.ITEM_HANDLER) {
+                            return LazyOptional.of(be::getAutomationHandler).cast();
+                        }
+                        return LazyOptional.empty();
+                    }
+                });
+    }
+
+    /** Тултип «Стоимость/Выход материи» на каждом предмете. */
+    @SubscribeEvent
+    private static void addMatterTooltip(ItemTooltipEvent event) {
+        Item item = event.getItemStack().getItem();
+        long cost = MatterValues.getCostMicro(item);
+        long yield = MatterValues.getDematerializeYieldMicro(item);
+        event.getToolTip().add(Component.translatable("tooltip.quantx.matter_cost",
+                MatterValues.formatMicro(cost)));
+        event.getToolTip().add(Component.translatable("tooltip.quantx.matter_yield",
+                MatterValues.formatMicro(yield)));
     }
 
     @SubscribeEvent
@@ -99,6 +148,9 @@ public class QuantX {
     public void addCreative(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
             event.accept(MATERIALIZER_ITEM);
+        }
+        if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
+            event.accept(PUNCH_CARD);
         }
     }
 }

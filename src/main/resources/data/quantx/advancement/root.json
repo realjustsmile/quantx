@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "quantx:materializer"
+    },
+    "title": {
+      "translate": "advancement.quantx.root.title"
+    },
+    "description": {
+      "translate": "advancement.quantx.root.desc"
+    },
+    "background": "minecraft:textures/gui/advancements/backgrounds/stone.png",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has_materializer": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "quantx:materializer"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_materializer"
+    ]
+  ]
+}

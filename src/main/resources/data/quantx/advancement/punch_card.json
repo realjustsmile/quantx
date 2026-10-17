@@ -1,0 +1,35 @@
+{
+  "parent": "quantx:root",
+  "display": {
+    "icon": {
+      "id": "quantx:punch_card"
+    },
+    "title": {
+      "translate": "advancement.quantx.card.title"
+    },
+    "description": {
+      "translate": "advancement.quantx.card.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "has_punch_card": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "quantx:punch_card"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_punch_card"
+    ]
+  ]
+}

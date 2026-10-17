@@ -1,0 +1,29 @@
+{
+  "parent": "quantx:root",
+  "display": {
+    "icon": {
+      "id": "minecraft:gunpowder"
+    },
+    "title": {
+      "translate": "advancement.quantx.demat.title"
+    },
+    "description": {
+      "translate": "advancement.quantx.demat.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "dematerialized": {
+      "trigger": "quantx:dematerialized",
+      "conditions": {}
+    }
+  },
+  "requirements": [
+    [
+      "dematerialized"
+    ]
+  ]
+}

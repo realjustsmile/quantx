@@ -1,4 +1,39 @@
 {
   "block.quantx.materializer": "Materializer",
-  "item.quantx.materializer": "Materializer"
+  "item.quantx.materializer": "Materializer",
+
+  "gui.quantx.materializer.mode": "Mode: %s",
+  "gui.quantx.materializer.mode.scan": "Scan",
+  "gui.quantx.materializer.mode.dematerialize": "Dematerialize",
+  "gui.quantx.materializer.mode.materialize": "Materialize",
+  "gui.quantx.materializer.mode.unknown": "?",
+  "gui.quantx.materializer.cost": "Cost: %s",
+  "gui.quantx.materializer.matter": "Matter: %s",
+
+  "gui.quantx.materializer.tooltip.mode": "Switch working mode",
+  "gui.quantx.materializer.tooltip.start_stop": "Start / stop the machine",
+  "gui.quantx.materializer.tooltip.prev_recipe": "Previous recipe",
+  "gui.quantx.materializer.tooltip.next_recipe": "Next recipe",
+
+  "item.quantx.punch_card": "Punch Card",
+  "item.quantx.punch_card.desc": "Shift+Right-click a Materializer to record or load recipes. Single use.",
+  "item.quantx.punch_card.empty": "Empty",
+  "item.quantx.punch_card.recipes": "Recipes recorded: %s",
+  "item.quantx.punch_card.nothing_to_write": "This materializer knows no recipes",
+  "item.quantx.punch_card.written": "Recorded %s recipe(s)",
+  "item.quantx.punch_card.transferred": "Transferred %s recipe(s). The card degraded into %s",
+
+  "tooltip.quantx.matter_cost": "Matter cost: %s",
+  "tooltip.quantx.matter_yield": "Dematerialize yield: %s",
+
+  "advancement.quantx.root.title": "QuantX",
+  "advancement.quantx.root.desc": "Craft a Materializer",
+  "advancement.quantx.scan.title": "Know Your Matter",
+  "advancement.quantx.scan.desc": "Scan an item to learn its recipe",
+  "advancement.quantx.demat.title": "Reduce to Dust",
+  "advancement.quantx.demat.desc": "Dematerialize an item into raw matter",
+  "advancement.quantx.mat.title": "Something from Nothing",
+  "advancement.quantx.mat.desc": "Materialize a learned item from matter",
+  "advancement.quantx.card.title": "Portable Knowledge",
+  "advancement.quantx.card.desc": "Obtain a punch card"
 }
