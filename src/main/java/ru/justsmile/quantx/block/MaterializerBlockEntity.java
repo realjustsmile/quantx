@@ -259,7 +259,12 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
      */
     public static void tick(Level level, BlockPos pos, BlockState state,
                             MaterializerBlockEntity be) {
-        if (level.isClientSide() || !be.running) return;
+        if (level.isClientSide()) return;
+        // Синк «работает» в BlockState — клиент по нему спавнит частицы.
+        if (state.getValue(MaterializerBlock.ACTIVE) != be.running) {
+            level.setBlock(pos, state.setValue(MaterializerBlock.ACTIVE, be.running), 3);
+        }
+        if (!be.running) return;
         switch (be.mode) {
             case SCAN -> be.tickScan(level, pos, state);
             case DEMATERIALIZE -> be.tickDematerialize(level, pos, state);

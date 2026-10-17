@@ -1,5 +1,6 @@
 {
   "variants": {
-    "": { "model": "quantx:block/materializer" }
+    "active=false": { "model": "quantx:block/materializer" },
+    "active=true": { "model": "quantx:block/materializer" }
   }
 }
