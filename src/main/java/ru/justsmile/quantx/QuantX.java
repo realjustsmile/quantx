@@ -123,6 +123,11 @@ public class QuantX {
     /** Тултип «Стоимость/Выход материи» на каждом предмете. */
     @SubscribeEvent
     private static void addMatterTooltip(ItemTooltipEvent event) {
+        // getEntity() == null при стартовом заполнении поиска — индекс будет построен позже.
+        if (event.getEntity() != null
+                && event.getEntity().level().recipeAccess() instanceof net.minecraft.world.item.crafting.RecipeManager rm) {
+            MatterValues.init(rm);
+        }
         Item item = event.getItemStack().getItem();
         long cost = MatterValues.getCostMicro(item);
         long yield = MatterValues.getDematerializeYieldMicro(item);

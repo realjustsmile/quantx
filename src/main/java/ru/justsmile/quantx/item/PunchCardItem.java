@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -22,6 +23,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
 import ru.justsmile.quantx.block.MaterializerBlockEntity;
+import ru.justsmile.quantx.matter.MatterValues;
 
 /**
  * Перфокарта — перенос изученных рецептов между материализаторами.
@@ -119,7 +121,11 @@ public class PunchCardItem extends Item {
             if (id == null) continue;
             Optional<Long> cost = recipes.getLong(key);
             if (cost.isEmpty() || materializer.isRecipeKnown(id)) continue;
-            materializer.learnRecipe(id, cost.get());
+            // Цену на карте не доверяем — берём живую из таблицы
+            // (на карте могла остаться устаревшая/багнутая стоимость).
+            Item item = BuiltInRegistries.ITEM.getValue(id);
+            if (item == Items.AIR) continue;
+            materializer.learnRecipe(id, MatterValues.getCostMicro(item));
             learned++;
         }
 

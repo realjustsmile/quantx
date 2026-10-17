@@ -227,11 +227,15 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
         setChanged();
     }
 
-    /** Стоимость выбранного рецепта в микро-серых (0 — не выбран/неизвестен). */
+    /**
+     * Стоимость выбранного рецепта в микро-серых (0 — не выбран/неизвестен).
+     * Цена всегда живая из MatterValues: значения в knownRecipes могли
+     * устареть (старые версии таблицы, баги) — не доверяем им.
+     */
     public long getSelectedCostMicro() {
-        if (selectedRecipe == null) return 0L;
-        Long cost = knownRecipes.get(selectedRecipe);
-        return cost == null ? 0L : cost;
+        if (selectedRecipe == null || !isRecipeKnown(selectedRecipe)) return 0L;
+        Item item = BuiltInRegistries.ITEM.getValue(selectedRecipe);
+        return item == null ? 0L : MatterValues.getCostMicro(item);
     }
 
     public int getProgress() {
@@ -337,6 +341,10 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
     public static void tick(Level level, BlockPos pos, BlockState state,
                             MaterializerBlockEntity be) {
         if (level.isClientSide()) return;
+        // Ленивый индекс рецептов для ценообразования — строится один раз.
+        if (level.getServer() != null) {
+            MatterValues.init(level.getServer().getRecipeManager());
+        }
         // Синк «работает» в BlockState — клиент по нему спавнит частицы.
         if (state.getValue(MaterializerBlock.ACTIVE) != be.running) {
             level.setBlock(pos, state.setValue(MaterializerBlock.ACTIVE, be.running), 3);
@@ -421,7 +429,7 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
             return;
         }
 
-        long cost = knownRecipes.get(selectedRecipe);
+        long cost = getSelectedCostMicro();
         if (matterMicro < cost) {
             // Не хватает материи — останавливаемся.
             stop();
@@ -485,6 +493,8 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
         super.saveAdditional(output);
 
         output.putLong("MatterMicro", matterMicro);
+        // Масштаб 2: 1 единица материи = 10 микро (был 1_000_000).
+        output.putInt("MatterScale", 2);
 
         output.putInt("Mode", mode.ordinal());
         output.putInt("Progress", progress);
@@ -515,10 +525,16 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
         super.loadAdditional(input);
 
         // Единая материя; миграция старых тиров в эквивалент (x10/x100).
-        matterMicro = input.getLongOr("MatterMicro",
+        long storedMatter = input.getLongOr("MatterMicro",
                 input.getLongOr("GrayMicro", 0L)
                         + input.getLongOr("BlueMicro", 0L) * 10
                         + input.getLongOr("GoldMicro", 0L) * 100);
+        // Миграция масштаба: старые сейвы (без MatterScale) хранили микро
+        // при 1 ед. = 1_000_000 мк; теперь 1 ед. = 10 мк → делим на 100_000.
+        if (input.getIntOr("MatterScale", 1) < 2) {
+            storedMatter /= 100_000L;
+        }
+        matterMicro = storedMatter;
 
         int modeOrdinal = input.getIntOr("Mode", 0);
         Mode[] modes = Mode.values();

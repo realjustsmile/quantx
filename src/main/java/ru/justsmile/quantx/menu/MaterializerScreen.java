@@ -100,14 +100,20 @@ public class MaterializerScreen extends AbstractContainerScreen<MaterializerMenu
         modeButton.setMessage(Component.translatable("gui.quantx.materializer.mode",
                 Component.translatable(modeKey(menu.getModeOrdinal()))));
 
-        // 3б. Стоимость выбранного рецепта — под кнопками листания.
+        // 3б. Стоимость выбранного рецепта — отдельный модуль СПРАВА от окна,
+        //     вплотную к рамке, на уровне ячейки рецепта (y+20, высота 18).
         //     Красная, если материи не хватает на сборку.
         long costMicro = menu.getSelectedCostMicro();
         if (costMicro > 0) {
             int color = menu.getMatterMicro() >= costMicro ? 0xFFAAAAAA : 0xFFFF5555;
-            gfx.text(font, Component.translatable("gui.quantx.materializer.cost",
-                            MatterValues.formatMicro(costMicro)),
-                    leftPos + 104, topPos + 58, color, false);
+            Component label = Component.translatable("gui.quantx.materializer.cost",
+                    MatterValues.formatMicro(costMicro));
+            int px = leftPos + imageWidth;
+            int py = topPos + 20;
+            int pw = font.width(label) + 8;
+            gfx.fill(px, py, px + pw, py + 18, 0xFF373737);
+            gfx.fill(px + 1, py + 1, px + pw - 1, py + 17, 0xFF151515);
+            gfx.text(font, label, px + 4, py + 5, color, false);
         }
 
         // 4. Прогресс-бар: заливка внутренности жёлобка (51,27)-(79,34).
