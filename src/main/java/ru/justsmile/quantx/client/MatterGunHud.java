@@ -31,7 +31,7 @@ public final class MatterGunHud {
 
         Component text = Component.translatable("item.quantx.matter_gun.matter",
                 MatterValues.formatMicro(MatterGunItem.getMatterMicro(stack)),
-                MatterValues.formatMicro(MatterGunItem.CAPACITY_MICRO));
+                MatterValues.formatMicro(MatterGunItem.capacityFor(player)));
 
         int w = mc.getWindow().getGuiScaledWidth();
         int h = mc.getWindow().getGuiScaledHeight();
@@ -40,7 +40,8 @@ public final class MatterGunHud {
         int y = h - 45;
         gfx.text(mc.font, text, x, y, 0xFF55DDCC, true);
 
-        // Сколько материи даст блок под прицелом — справа-снизу от курсора.
+        // Сколько материи даст блок под прицелом — справа-сверху от
+        // курсора, чуть уменьшенным шрифтом.
         if (player.pick(4.5, 1.0f, false) instanceof BlockHitResult bhr) {
             BlockPos target = bhr.getBlockPos();
             BlockState state = player.level().getBlockState(target);
@@ -48,9 +49,18 @@ public final class MatterGunHud {
                 long yield = MatterValues.getDematerializeYieldMicro(state.getBlock().asItem());
                 Component label = Component.translatable("tooltip.quantx.matter_yield",
                         MatterValues.formatMicro(yield));
-                gfx.text(mc.font, label, w / 2 + 10, h / 2 + 12, 0xFFFFFFFF, true);
+                gfx.pose().pushMatrix();
+                gfx.pose().translate(w / 2f + 10f, h / 2f - 14f);
+                gfx.pose().scale(0.75f, 0.75f);
+                gfx.text(mc.font, label, 0, 0, 0xFFFFFFFF, true);
+                gfx.pose().popMatrix();
             }
         }
+    }
+
+    /** Локальный игрок для клиентских расчётов (тултипы, полоска бака). */
+    public static Player clientPlayer() {
+        return Minecraft.getInstance().player;
     }
 
     private static ItemStack findGun(Player player) {

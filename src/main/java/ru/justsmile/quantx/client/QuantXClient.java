@@ -20,11 +20,21 @@ public final class QuantXClient {
     public static void registerOverlays() {
         // item_hotbar живёт внутри сабстека "hotbar" — указываем его явно,
         // иначе addAbove не находит цель в корне и слой молча пропадает.
-        AddGuiOverlayLayersEvent.BUS.addListener(e ->
-                e.getLayeredDraw().addAbove(
-                        ForgeLayeredDraw.HOTBAR_AND_DECOS,
-                        Identifier.fromNamespaceAndPath(QuantX.MODID, "matter_gun"),
-                        ForgeLayeredDraw.ITEM_HOTBAR,
-                        MatterGunHud::extract));
+        AddGuiOverlayLayersEvent.BUS.addListener(e -> {
+            e.getLayeredDraw().addAbove(
+                    ForgeLayeredDraw.HOTBAR_AND_DECOS,
+                    Identifier.fromNamespaceAndPath(QuantX.MODID, "matter_gun"),
+                    ForgeLayeredDraw.ITEM_HOTBAR,
+                    MatterGunHud::extract);
+            // Объём материи блока под прицелом (материализатор, хранилище).
+            e.getLayeredDraw().addAbove(
+                    ForgeLayeredDraw.HOTBAR_AND_DECOS,
+                    Identifier.fromNamespaceAndPath(QuantX.MODID, "matter_tank"),
+                    ForgeLayeredDraw.ITEM_HOTBAR,
+                    MatterTankHud::extract);
+        });
+
+        // Рамка слота ранца материи в экране инвентаря.
+        MatterPackSlotRender.register();
     }
 }

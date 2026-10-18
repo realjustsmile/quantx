@@ -26,8 +26,12 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
-import ru.justsmile.quantx.block.MaterializerBlockEntity;
+import org.jetbrains.annotations.Nullable;
+import ru.justsmile.quantx.QuantX;
+import ru.justsmile.quantx.block.MatterTank;
+import ru.justsmile.quantx.client.MatterGunHud;
 import ru.justsmile.quantx.matter.MatterValues;
+import ru.justsmile.quantx.menu.MatterPackContainer;
 
 /**
  * Материальная пушка — ручной дематериализатор.
@@ -43,6 +47,17 @@ public class MatterGunItem extends Item {
 
     /** Вместимость внутреннего бака: 10 000 единиц материи (в микро). */
     public static final long CAPACITY_MICRO = 100_000L;
+
+    /**
+     * Эффективная вместимость бака для игрока:
+     * базовая + бонус ранца материи, если он надет в своём слоте.
+     */
+    public static long capacityFor(@Nullable Player player) {
+        if (player != null && MatterPackContainer.isWearingPack(player)) {
+            return CAPACITY_MICRO + MatterPackItem.BONUS_MICRO;
+        }
+        return CAPACITY_MICRO;
+    }
 
     private static final String MATTER_KEY = "Matter";
 
@@ -109,8 +124,8 @@ public class MatterGunItem extends Item {
         BlockEntity be = level.getBlockEntity(pos);
         boolean sneaking = player != null && player.isShiftKeyDown();
 
-        // Shift+ПКМ по материализатору — слить бак пушки в машину.
-        if (be instanceof MaterializerBlockEntity materializer && sneaking) {
+        // Shift+ПКМ по баку материи (материализатор, хранилище) — слить бак пушки.
+        if (be instanceof MatterTank tank && sneaking) {
             if (level.isClientSide()) return InteractionResult.SUCCESS;
             long stored = getMatterMicro(stack);
             if (stored <= 0) {
@@ -118,11 +133,11 @@ public class MatterGunItem extends Item {
                         Component.translatable("item.quantx.matter_gun.empty"));
                 return InteractionResult.SUCCESS;
             }
-            materializer.addMatter(stored);
-            setMatterMicro(stack, 0L);
+            long accepted = tank.addMatter(stored);
+            setMatterMicro(stack, stored - accepted);
             player.sendSystemMessage(Component.translatable(
                     "item.quantx.matter_gun.transferred",
-                    MatterValues.formatMicro(stored)));
+                    MatterValues.formatMicro(accepted)));
             level.playSound(null, pos, SoundEvents.END_PORTAL_FRAME_FILL,
                     SoundSource.BLOCKS, 1.0f, 1.2f);
             return InteractionResult.SUCCESS;
@@ -131,8 +146,10 @@ public class MatterGunItem extends Item {
         // ПКМ по блоку — начать дематериализацию (удержание).
         // Обычный ПКМ по интерактивному блоку сюда не доходит: блок сам
         // обрабатывает клик (GUI, кнопки). Shift+ПКМ обходит это и ломает.
+        // Свои блоки (материализатор, хранилище, волокна, хабы) пушка не трогает.
         BlockState state = level.getBlockState(pos);
-        if (state.isAir() || state.getDestroySpeed(level, pos) < 0) {
+        if (state.isAir() || state.getDestroySpeed(level, pos) < 0
+                || isQuantXBlock(state)) {
             return InteractionResult.PASS;
         }
         if (player != null) {
@@ -157,7 +174,8 @@ public class MatterGunItem extends Item {
             return;
         }
         BlockState state = level.getBlockState(target);
-        if (state.isAir() || state.getDestroySpeed(level, target) < 0) {
+        if (state.isAir() || state.getDestroySpeed(level, target) < 0
+                || isQuantXBlock(state)) {
             stopDig(player);
             return;
         }
@@ -185,7 +203,7 @@ public class MatterGunItem extends Item {
         // Блок разобран: без дропа, его ценность уходит в бак пушки.
         level.destroyBlock(target, false);
         long stored = getMatterMicro(stack);
-        long space = CAPACITY_MICRO - stored;
+        long space = capacityFor(player) - stored;
         if (space > 0) {
             long yield = MatterValues.getDematerializeYieldMicro(state.getBlock().asItem());
             setMatterMicro(stack, stored + Math.min(yield, space));
@@ -197,6 +215,12 @@ public class MatterGunItem extends Item {
         // Не отпускаем кнопку — целимся в следующий блок и продолжаем.
         BlockPos next = raycastPos(player);
         DIGGING.put(player.getUUID(), new Dig(next, 0.0f));
+    }
+
+    /** Блоки QuantX нельзя разбирать пушкой — в них материя/буферы. */
+    private static boolean isQuantXBlock(BlockState state) {
+        return net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                .getKey(state.getBlock()).getNamespace().equals(QuantX.MODID);
     }
 
     private static BlockPos raycastPos(Player player) {
@@ -243,7 +267,9 @@ public class MatterGunItem extends Item {
 
     @Override
     public int getBarWidth(ItemStack stack) {
-        return (int) (13L * getMatterMicro(stack) / CAPACITY_MICRO);
+        // Вызывается только на клиенте — берём локального игрока.
+        return (int) (13L * getMatterMicro(stack)
+                / capacityFor(MatterGunHud.clientPlayer()));
     }
 
     @Override
@@ -260,6 +286,6 @@ public class MatterGunItem extends Item {
         builder.accept(Component.translatable("item.quantx.matter_gun.desc"));
         builder.accept(Component.translatable("item.quantx.matter_gun.matter",
                 MatterValues.formatMicro(getMatterMicro(stack)),
-                MatterValues.formatMicro(CAPACITY_MICRO)));
+                MatterValues.formatMicro(capacityFor(MatterGunHud.clientPlayer()))));
     }
 }

@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "DD",
+    "DD"
+  ],
+  "key": {
+    "D": "quantx:granite_dust"
+  },
+  "result": {
+    "id": "quantx:granite_plate",
+    "count": 1
+  }
+}

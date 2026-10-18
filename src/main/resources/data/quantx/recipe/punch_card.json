@@ -3,7 +3,8 @@
   "ingredients": [
     "minecraft:paper",
     "minecraft:copper_ingot",
-    "minecraft:redstone"
+    "minecraft:redstone",
+    "quantx:granite_dust"
   ],
   "result": {
     "id": "quantx:punch_card",

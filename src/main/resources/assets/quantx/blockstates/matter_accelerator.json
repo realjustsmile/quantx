@@ -1,0 +1,41 @@
+{
+  "multipart": [
+    { "apply": { "model": "quantx:block/matter_accelerator_node" } },
+    { "when": { "flow": "true" }, "apply": { "model": "quantx:block/matter_accelerator_node_flow" } },
+
+    { "when": { "facing": "north" }, "apply": { "model": "quantx:block/matter_accelerator_dir" } },
+    { "when": { "facing": "east" },  "apply": { "model": "quantx:block/matter_accelerator_dir", "y": 90, "uvlock": true } },
+    { "when": { "facing": "south" }, "apply": { "model": "quantx:block/matter_accelerator_dir", "y": 180, "uvlock": true } },
+    { "when": { "facing": "west" },  "apply": { "model": "quantx:block/matter_accelerator_dir", "y": 270, "uvlock": true } },
+    { "when": { "facing": "up" },    "apply": { "model": "quantx:block/matter_accelerator_dir", "x": 270, "uvlock": true } },
+    { "when": { "facing": "down" },  "apply": { "model": "quantx:block/matter_accelerator_dir", "x": 90, "uvlock": true } },
+
+    { "when": { "facing": "north", "conn_south": "false" }, "apply": { "model": "quantx:block/matter_accelerator_inlet" } },
+    { "when": { "facing": "east",  "conn_west": "false" },  "apply": { "model": "quantx:block/matter_accelerator_inlet", "y": 90, "uvlock": true } },
+    { "when": { "facing": "south", "conn_north": "false" }, "apply": { "model": "quantx:block/matter_accelerator_inlet", "y": 180, "uvlock": true } },
+    { "when": { "facing": "west",  "conn_east": "false" },  "apply": { "model": "quantx:block/matter_accelerator_inlet", "y": 270, "uvlock": true } },
+    { "when": { "facing": "up",    "conn_down": "false" },  "apply": { "model": "quantx:block/matter_accelerator_inlet", "x": 270, "uvlock": true } },
+    { "when": { "facing": "down",  "conn_up": "false" },   "apply": { "model": "quantx:block/matter_accelerator_inlet", "x": 90, "uvlock": true } },
+
+    { "when": { "conn_north": "true" }, "apply": { "model": "quantx:block/quantum_fiber_arm" } },
+    { "when": { "conn_east": "true" },  "apply": { "model": "quantx:block/quantum_fiber_arm", "y": 90, "uvlock": true } },
+    { "when": { "conn_south": "true" }, "apply": { "model": "quantx:block/quantum_fiber_arm", "y": 180, "uvlock": true } },
+    { "when": { "conn_west": "true" },  "apply": { "model": "quantx:block/quantum_fiber_arm", "y": 270, "uvlock": true } },
+    { "when": { "conn_up": "true" },    "apply": { "model": "quantx:block/quantum_fiber_arm", "x": 270, "uvlock": true } },
+    { "when": { "conn_down": "true" },  "apply": { "model": "quantx:block/quantum_fiber_arm", "x": 90, "uvlock": true } },
+
+    { "when": { "flow": "true", "conn_north": "true", "facing": "north" }, "apply": { "model": "quantx:block/quantum_fiber_flow_out" } },
+    { "when": { "flow": "true", "conn_east": "true",  "facing": "east" },  "apply": { "model": "quantx:block/quantum_fiber_flow_out", "y": 90, "uvlock": true } },
+    { "when": { "flow": "true", "conn_south": "true", "facing": "south" }, "apply": { "model": "quantx:block/quantum_fiber_flow_out", "y": 180, "uvlock": true } },
+    { "when": { "flow": "true", "conn_west": "true",  "facing": "west" },  "apply": { "model": "quantx:block/quantum_fiber_flow_out", "y": 270, "uvlock": true } },
+    { "when": { "flow": "true", "conn_up": "true",    "facing": "up" },    "apply": { "model": "quantx:block/quantum_fiber_flow_out", "x": 270, "uvlock": true } },
+    { "when": { "flow": "true", "conn_down": "true",  "facing": "down" },  "apply": { "model": "quantx:block/quantum_fiber_flow_out", "x": 90, "uvlock": true } },
+
+    { "when": { "flow": "true", "conn_north": "true", "facing": "south" }, "apply": { "model": "quantx:block/quantum_fiber_flow_in" } },
+    { "when": { "flow": "true", "conn_east": "true",  "facing": "west" },  "apply": { "model": "quantx:block/quantum_fiber_flow_in", "y": 90, "uvlock": true } },
+    { "when": { "flow": "true", "conn_south": "true", "facing": "north" }, "apply": { "model": "quantx:block/quantum_fiber_flow_in", "y": 180, "uvlock": true } },
+    { "when": { "flow": "true", "conn_west": "true",  "facing": "east" },  "apply": { "model": "quantx:block/quantum_fiber_flow_in", "y": 270, "uvlock": true } },
+    { "when": { "flow": "true", "conn_up": "true",    "facing": "down" },  "apply": { "model": "quantx:block/quantum_fiber_flow_in", "x": 270, "uvlock": true } },
+    { "when": { "flow": "true", "conn_down": "true",  "facing": "up" },    "apply": { "model": "quantx:block/quantum_fiber_flow_in", "x": 90, "uvlock": true } }
+  ]
+}

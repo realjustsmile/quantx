@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PDP",
+    "DGD",
+    "PDP"
+  ],
+  "key": {
+    "P": "quantx:granite_plate",
+    "D": "quantx:granite_dust",
+    "G": "quantx:quantum_fiber"
+  },
+  "result": {
+    "id": "quantx:matter_accelerator",
+    "count": 1
+  }
+}

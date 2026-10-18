@@ -115,6 +115,15 @@ public class MaterializerMenu extends AbstractContainerMenu {
                 matterData.get(MatterContainerData.IDX_COST + 3));
     }
 
+    /** Полная ёмкость бака (база + соседние хранилища) в микро-единицах. */
+    public long getCapacityMicro() {
+        return MatterContainerData.packLong(
+                matterData.get(MatterContainerData.IDX_CAPACITY),
+                matterData.get(MatterContainerData.IDX_CAPACITY + 1),
+                matterData.get(MatterContainerData.IDX_CAPACITY + 2),
+                matterData.get(MatterContainerData.IDX_CAPACITY + 3));
+    }
+
     /** Машина запущена (Старт/Стоп). */
     public boolean isRunning() {
         return matterData.get(MatterContainerData.IDX_RUNNING) != 0;

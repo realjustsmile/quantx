@@ -1,17 +1,24 @@
 package ru.justsmile.quantx.block;
 
 import com.mojang.serialization.Codec;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -22,6 +29,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -39,7 +47,8 @@ import ru.justsmile.quantx.trigger.QuantXTriggers;
  * Блок-материализатор. Хранит материю как числа (микро-единицы)
  * и инвентарь из 2 слотов (вход/выход).
  */
-public class MaterializerBlockEntity extends BlockEntity implements MenuProvider {
+public class MaterializerBlockEntity extends BlockEntity
+        implements MenuProvider, MatterTank {
 
     public static final int SLOT_INPUT = 0;
     public static final int SLOT_OUTPUT = 1;
@@ -126,6 +135,14 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
 
     // ===== Материя (микро-единицы, единая) =====
     private long matterMicro = 0L;
+
+    /**
+     * Базовый бак = 400 ед. материи.
+     * Материализовать предметы дороже 400 ед. без внешних хранилищ нельзя:
+     * материи физически негде уместиться. Сканировать можно что угодно —
+     * рецепты не ограничены.
+     */
+    public static final long BASE_CAPACITY_MICRO = 400L * MatterValues.MICRO_PER_UNIT;
 
     /**
      * «Призрачный» слот: показывает иконку выбранного рецепта в GUI.
@@ -404,11 +421,18 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
             stop();
             return;
         }
+        if (getMatterMicro() >= getCapacityMicro()) {
+            // Бак и сеть полны — не тратим предмет впустую.
+            stop();
+            return;
+        }
 
         progress++;
         if (progress >= maxProgress) {
-            progress = 0;
             long yield = MatterValues.getDematerializeYieldMicro(input.getItem());
+            // Не влезло целиком — предмет всё равно разбирается,
+            // излишек материи теряется.
+            progress = 0;
             inventory.extractItem(SLOT_INPUT, 1, false);
             addMatter(yield);
             level.playSound(null, pos, SoundEvents.FIRE_EXTINGUISH,
@@ -436,7 +460,7 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
         }
 
         long cost = getSelectedCostMicro();
-        if (matterMicro < cost) {
+        if (getMatterMicro() < cost) {
             // Не хватает материи — останавливаемся.
             stop();
             return;
@@ -474,22 +498,135 @@ public class MaterializerBlockEntity extends BlockEntity implements MenuProvider
 
     // ===== Материя =====
 
-    public long getMatterMicro() { return matterMicro; }
+    /**
+     * Материя ЭТОГО блока — счёт ведётся per-block.
+     * Ёмкость расширяется хранилищами сети, но физически материя
+     * лежит здесь и перекачивается в/из хранилищ сетью.
+     */
+    @Override
+    public long getMatterMicro() {
+        return matterMicro;
+    }
 
-    /** Добавить материю (в микро-единицах). */
-    public void addMatter(long micro) {
-        if (micro <= 0) return;
-        matterMicro += micro;
-        setChanged();
+    /**
+     * Полная ёмкость: базовый бак + бонусы хранилищ
+     * ({@link MatterStorageProvider}), достижимых по сети
+     * квантовых волокон и хабов.
+     */
+    @Override
+    public long getCapacityMicro() {
+        long capacity = BASE_CAPACITY_MICRO;
+        for (MatterStorageProvider s : storages()) {
+            capacity += s.getMatterCapacityBonusMicro();
+        }
+        return capacity;
+    }
+
+    /**
+     * Добавить материю в счёт ЭТОГО блока (ёмкость = база + хранилища сети).
+     * Возвращает сколько реально принято.
+     */
+    @Override
+    public long addMatter(long micro) {
+        if (micro <= 0) return 0L;
+        long accepted = Math.min(micro, getCapacityMicro() - matterMicro);
+        if (accepted <= 0) return 0L;
+        matterMicro += accepted;
+        if (accepted > 0) {
+            setChanged();
+            syncToClient();
+        }
+        return accepted;
+    }
+
+    /**
+     * Забрать материю из пула: сначала из хранилищ сети,
+     * остаток — из собственного бака.
+     * Возвращает сколько реально отдано.
+     */
+    @Override
+    public long takeMatter(long micro) {
+        if (micro <= 0) return 0L;
+        long taken = Math.min(micro, matterMicro);
+        if (taken <= 0) return 0L;
+        matterMicro -= taken;
+        if (taken > 0) {
+            setChanged();
+            syncToClient();
+        }
+        return taken;
     }
 
     /** Списать материю при сборке. false — не хватает. */
     public boolean consumeMatter(long costMicro) {
         if (costMicro <= 0) return true;
-        if (matterMicro < costMicro) return false;
-        matterMicro -= costMicro;
-        setChanged();
-        return true;
+        return takeMatter(costMicro) == costMicro;
+    }
+
+    // ===== Сеть материи =====
+
+    /** Найденные хранилища и момент последнего сканирования (кэш ~0.5 c). */
+    @Nullable
+    private List<MatterStorageProvider> networkStorages = null;
+    private long networkCacheTick = Long.MIN_VALUE;
+
+    /** Максимум узлов при обходе сети — защита от гигантских петель. */
+    private static final int NETWORK_SCAN_LIMIT = 128;
+
+    /**
+     * BFS по соседям: собирает все {@link MatterStorageProvider},
+     * достижимые напрямую и через {@link MatterConduit} (волокна, хабы).
+     * За хранилищем сеть не продолжается — это сток, а не транзит.
+     * Результат кэшируется на 10 тиков.
+     */
+    private List<MatterStorageProvider> storages() {
+        long gameTime = level != null ? level.getGameTime() : 0L;
+        if (networkStorages != null && gameTime - networkCacheTick < 10L) {
+            return networkStorages;
+        }
+        List<MatterStorageProvider> found = new ArrayList<>();
+        if (level != null) {
+            Set<BlockPos> visited = new HashSet<>();
+            ArrayDeque<BlockPos> queue = new ArrayDeque<>();
+            visited.add(worldPosition);
+            for (Direction dir : Direction.values()) {
+                queue.add(worldPosition.relative(dir));
+            }
+            while (!queue.isEmpty() && visited.size() < NETWORK_SCAN_LIMIT) {
+                BlockPos p = queue.poll();
+                if (!visited.add(p)) continue;
+                BlockEntity be = level.getBlockEntity(p);
+                if (be instanceof MatterStorageProvider storage) {
+                    found.add(storage);
+                } else if (be instanceof MatterConduit) {
+                    for (Direction dir : Direction.values()) {
+                        BlockPos next = p.relative(dir);
+                        if (!visited.contains(next)) queue.add(next);
+                    }
+                }
+            }
+        }
+        networkStorages = found;
+        networkCacheTick = gameTime;
+        return found;
+    }
+
+    // ===== Синхронизация на клиент (HUD при наведении) =====
+
+    private void syncToClient() {
+        if (level != null && !level.isClientSide()) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        return saveWithoutMetadata(registries);
     }
 
     // ===== Сохранение =====

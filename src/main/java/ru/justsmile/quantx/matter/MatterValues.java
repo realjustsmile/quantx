@@ -451,6 +451,15 @@ public final class MatterValues {
     }
 
     /**
+     * То же, что {@link #formatMicro}, но БЕЗ пробелов-разделителей
+     * разрядов. Для строки бака «Материя: xxx / xxx».
+     */
+    public static String formatMicroPlain(long micro) {
+        long units = (micro + MICRO_PER_UNIT / 2) / MICRO_PER_UNIT;
+        return Long.toString(units);
+    }
+
+    /**
      * Форматирует микро-единицы в ЦЕЛЫЕ единицы материи (округление
      * до ближайшего), разряды группируются пробелами.
      * 30 → "3", 15 → "2", 4295294000 → "429 529 400".

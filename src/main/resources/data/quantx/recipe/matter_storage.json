@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PGP",
+    "GFG",
+    "PGP"
+  ],
+  "key": {
+    "P": "quantx:granite_plate",
+    "G": "minecraft:glass",
+    "F": "quantx:granite_frame"
+  },
+  "result": {
+    "id": "quantx:matter_storage",
+    "count": 1
+  }
+}

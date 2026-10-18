@@ -127,7 +127,8 @@ public class MaterializerScreen extends AbstractContainerScreen<MaterializerMenu
         // 5. Материя единая: одна строка с бирюзовой меткой.
         gfx.fill(leftPos + 10, topPos + 69, leftPos + 16, topPos + 75, 0xFF55DDCC);
         gfx.text(font, Component.translatable("gui.quantx.materializer.matter",
-                        MatterValues.formatMicro(menu.getMatterMicro())),
+                        MatterValues.formatMicroPlain(menu.getMatterMicro()),
+                        MatterValues.formatMicroPlain(menu.getCapacityMicro())),
                 leftPos + 20, topPos + 68, 0xFF7FE8D4, false);
 
         // 6. Рамка-индикатор вокруг Старт/Стоп (3px):

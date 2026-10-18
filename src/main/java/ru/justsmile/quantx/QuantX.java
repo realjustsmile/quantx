@@ -11,8 +11,10 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.UseEffects;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -38,8 +40,15 @@ import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
 import ru.justsmile.quantx.block.MaterializerBlock;
 import ru.justsmile.quantx.block.MaterializerBlockEntity;
+import ru.justsmile.quantx.block.MatterAcceleratorBlock;
+import ru.justsmile.quantx.block.MatterAcceleratorBlockEntity;
+import ru.justsmile.quantx.block.MatterStorageBlock;
+import ru.justsmile.quantx.block.MatterStorageBlockEntity;
+import ru.justsmile.quantx.block.QuantumFiberBlock;
+import ru.justsmile.quantx.block.QuantumFiberBlockEntity;
 import ru.justsmile.quantx.client.QuantXClient;
 import ru.justsmile.quantx.item.MatterGunItem;
+import ru.justsmile.quantx.item.MatterPackItem;
 import ru.justsmile.quantx.item.PunchCardItem;
 import ru.justsmile.quantx.matter.MatterValues;
 import ru.justsmile.quantx.menu.MaterializerMenu;
@@ -84,6 +93,39 @@ public class QuantX {
             MENUS.register("materializer",
                     () -> IForgeMenuType.create(MaterializerMenu::new));
 
+    /** Хранилище материи — пассивный бак, расширяет ёмкость материализатора. */
+    public static final RegistryObject<Block> MATTER_STORAGE = BLOCKS.register("matter_storage",
+            () -> new MatterStorageBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .setId(blockKey("matter_storage"))));
+    public static final RegistryObject<Item> MATTER_STORAGE_ITEM = ITEMS.register("matter_storage",
+            () -> new BlockItem(MATTER_STORAGE.get(), new Item.Properties().setId(itemKey("matter_storage"))));
+    public static final RegistryObject<BlockEntityType<MatterStorageBlockEntity>> MATTER_STORAGE_BE =
+            BLOCK_ENTITIES.register("matter_storage",
+                    () -> new BlockEntityType<>(MatterStorageBlockEntity::new,
+                            Set.of(MATTER_STORAGE.get())));
+
+    /** Квантовое волокно — тонкая трубка передачи материи. */
+    public static final RegistryObject<Block> QUANTUM_FIBER = BLOCKS.register("quantum_fiber",
+            () -> new QuantumFiberBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.GLASS)
+                    .setId(blockKey("quantum_fiber")).noOcclusion()));
+    public static final RegistryObject<Item> QUANTUM_FIBER_ITEM = ITEMS.register("quantum_fiber",
+            () -> new BlockItem(QUANTUM_FIBER.get(), new Item.Properties().setId(itemKey("quantum_fiber"))));
+    public static final RegistryObject<BlockEntityType<QuantumFiberBlockEntity>> QUANTUM_FIBER_BE =
+            BLOCK_ENTITIES.register("quantum_fiber",
+                    () -> new BlockEntityType<>(QuantumFiberBlockEntity::new,
+                            Set.of(QUANTUM_FIBER.get())));
+
+    /** Ускоритель материи волоконный — принудительно перетягивает материю со входа на выход. */
+    public static final RegistryObject<Block> MATTER_ACCELERATOR = BLOCKS.register("matter_accelerator",
+            () -> new MatterAcceleratorBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.GLASS)
+                    .setId(blockKey("matter_accelerator")).noOcclusion()));
+    public static final RegistryObject<Item> MATTER_ACCELERATOR_ITEM = ITEMS.register("matter_accelerator",
+            () -> new BlockItem(MATTER_ACCELERATOR.get(), new Item.Properties().setId(itemKey("matter_accelerator"))));
+    public static final RegistryObject<BlockEntityType<MatterAcceleratorBlockEntity>> MATTER_ACCELERATOR_BE =
+            BLOCK_ENTITIES.register("matter_accelerator",
+                    () -> new BlockEntityType<>(MatterAcceleratorBlockEntity::new,
+                            Set.of(MATTER_ACCELERATOR.get())));
+
     /** Перфокарта — перенос изученных рецептов. В стаке 1 шт., хранит данные. */
     public static final RegistryObject<Item> PUNCH_CARD = ITEMS.register("punch_card",
             () -> new PunchCardItem(new Item.Properties()
@@ -96,6 +138,47 @@ public class QuantX {
                     // Без замедления при удержании ПКМ (дефолт: speed 0.2, no sprint).
                     .component(DataComponents.USE_EFFECTS, new UseEffects(true, true, 1.0F))));
 
+    // ===== Гранитные компоненты — основа крафтов мода =====
+
+    /** Гранитная пыль: дробится из гранита 1→2, база для пластин. */
+    public static final RegistryObject<Item> GRANITE_DUST = ITEMS.register("granite_dust",
+            () -> new Item(new Item.Properties().setId(itemKey("granite_dust"))));
+
+    /** Гранитная пластина: 2×2 пыли (= 2 гранита) → 1 пластина. */
+    public static final RegistryObject<Item> GRANITE_PLATE = ITEMS.register("granite_plate",
+            () -> new Item(new Item.Properties().setId(itemKey("granite_plate"))));
+
+    /** Гранитная рама: 8 пластин + железный слиток → корпус машины. */
+    public static final RegistryObject<Item> GRANITE_FRAME = ITEMS.register("granite_frame",
+            () -> new Item(new Item.Properties().setId(itemKey("granite_frame"))));
+
+    /** Ранец материи — носится в своём слоте инвентаря, расширяет бак пушки. */
+    public static final RegistryObject<Item> MATTER_PACK = ITEMS.register("matter_pack",
+            () -> new MatterPackItem(new Item.Properties()
+                    .setId(itemKey("matter_pack")).stacksTo(1)));
+
+    /** Собственная вкладка мода в креативе. */
+    public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
+            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
+
+    public static final RegistryObject<CreativeModeTab> QUANTX_TAB = CREATIVE_TABS.register("quantx",
+            () -> CreativeModeTab.builder()
+                    .title(Component.translatable("itemGroup.quantx"))
+                    .icon(() -> new ItemStack(MATTER_GUN.get()))
+                    .displayItems((params, output) -> {
+                        output.accept(MATERIALIZER_ITEM.get());
+                        output.accept(PUNCH_CARD.get());
+                        output.accept(MATTER_GUN.get());
+                        output.accept(MATTER_PACK.get());
+                        output.accept(MATTER_STORAGE.get());
+                        output.accept(QUANTUM_FIBER.get());
+                        output.accept(MATTER_ACCELERATOR.get());
+                        output.accept(GRANITE_DUST.get());
+                        output.accept(GRANITE_PLATE.get());
+                        output.accept(GRANITE_FRAME.get());
+                    })
+                    .build());
+
     public QuantX(FMLJavaModLoadingContext context) {
         BusGroup modBusGroup = context.getModBusGroup();
 
@@ -104,6 +187,7 @@ public class QuantX {
         BLOCK_ENTITIES.register(modBusGroup);
         MENUS.register(modBusGroup);
         QuantXTriggers.TRIGGERS.register(modBusGroup);
+        CREATIVE_TABS.register(modBusGroup);
 
         // HUD-слои регистрируем уже сейчас: AddGuiOverlayLayersEvent отстреливает
         // при создании Hud внутри Minecraft.<init> — раньше FMLClientSetupEvent.
@@ -152,7 +236,7 @@ public class QuantX {
         long yield = MatterValues.getDematerializeYieldMicro(item);
         event.getToolTip().add(Component.translatable("tooltip.quantx.matter_cost",
                 MatterValues.formatMicro(cost)));
-        event.getToolTip().add(Component.translatable("tooltip.quantx.matter_yield",
+        event.getToolTip().add(Component.translatable("tooltip.quantx.matter_demat",
                 MatterValues.formatMicro(yield)));
     }
 
@@ -172,10 +256,21 @@ public class QuantX {
     public void addCreative(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
             event.accept(MATERIALIZER_ITEM);
+            event.accept(MATTER_STORAGE_ITEM);
+        }
+        if (event.getTabKey() == CreativeModeTabs.REDSTONE_BLOCKS) {
+            event.accept(QUANTUM_FIBER_ITEM);
+            event.accept(MATTER_ACCELERATOR_ITEM);
         }
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(PUNCH_CARD);
             event.accept(MATTER_GUN);
+            event.accept(MATTER_PACK);
+        }
+        if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
+            event.accept(GRANITE_DUST);
+            event.accept(GRANITE_PLATE);
+            event.accept(GRANITE_FRAME);
         }
     }
 }

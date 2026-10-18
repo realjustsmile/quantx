@@ -16,10 +16,11 @@ import ru.justsmile.quantx.block.MaterializerBlockEntity;
  * Ячейки 4-7: стоимость выбранного рецепта (4 чанка).
  * Ячейка 8: режим (ordinal). 9: прогресс. 10: макс. прогресс.
  * Ячейка 11: число изученных рецептов. 12: флаг running.
+ * Ячейки 13-16: ёмкость бака (4 чанка).
  */
 public class MatterContainerData implements ContainerData {
 
-    public static final int SIZE = 13;
+    public static final int SIZE = 17;
 
     // Индексы ячеек.
     public static final int IDX_MATTER = 0;
@@ -29,6 +30,7 @@ public class MatterContainerData implements ContainerData {
     public static final int IDX_MAX_PROGRESS = 10;
     public static final int IDX_KNOWN_COUNT = 11;
     public static final int IDX_RUNNING = 12;
+    public static final int IDX_CAPACITY = 13;
 
     @Nullable
     private final MaterializerBlockEntity be;
@@ -43,6 +45,7 @@ public class MatterContainerData implements ContainerData {
         if (be != null) {
             long matter = be.getMatterMicro();
             long cost = be.getSelectedCostMicro();
+            long capacity = be.getCapacityMicro();
             return switch (index) {
                 case IDX_MATTER -> (int) (matter >>> 48);
                 case IDX_MATTER + 1 -> (int) (matter >>> 32);
@@ -52,6 +55,10 @@ public class MatterContainerData implements ContainerData {
                 case IDX_COST + 1 -> (int) (cost >>> 32);
                 case IDX_COST + 2 -> (int) (cost >>> 16);
                 case IDX_COST + 3 -> (int) cost;
+                case IDX_CAPACITY -> (int) (capacity >>> 48);
+                case IDX_CAPACITY + 1 -> (int) (capacity >>> 32);
+                case IDX_CAPACITY + 2 -> (int) (capacity >>> 16);
+                case IDX_CAPACITY + 3 -> (int) capacity;
                 case IDX_MODE -> be.getMode().ordinal();
                 case IDX_PROGRESS -> be.getProgress();
                 case IDX_MAX_PROGRESS -> be.getMaxProgress();

@@ -1,6 +1,14 @@
 {
   "block.quantx.materializer": "Материализатор",
   "item.quantx.materializer": "Материализатор",
+  "block.quantx.matter_storage": "Хранилище материи",
+  "item.quantx.matter_storage": "Хранилище материи",
+  "block.quantx.quantum_fiber": "Квантовое волокно",
+  "item.quantx.quantum_fiber": "Квантовое волокно",
+  "block.quantx.matter_accelerator": "Волоконный ускоритель материи",
+  "item.quantx.matter_accelerator": "Волоконный ускоритель материи",
+
+  "block.quantx.matter_storage.matter": "Материя: %s / %s",
 
   "gui.quantx.materializer.mode": "Режим: %s",
   "gui.quantx.materializer.mode.scan": "Сканирование",
@@ -8,7 +16,7 @@
   "gui.quantx.materializer.mode.materialize": "Сборка",
   "gui.quantx.materializer.mode.unknown": "?",
   "gui.quantx.materializer.cost": "Цена: %s",
-  "gui.quantx.materializer.matter": "Материя: %s",
+  "gui.quantx.materializer.matter": "Материя: %s / %s",
 
   "gui.quantx.materializer.tooltip.mode": "Переключить режим работы",
   "gui.quantx.materializer.tooltip.start_stop": "Запустить/остановить работу",
@@ -30,8 +38,19 @@
   "item.quantx.matter_gun.full": "Бак пушки полон",
   "item.quantx.matter_gun.transferred": "Передано в материализатор: %s материи",
 
-  "tooltip.quantx.matter_cost": "Стоимость: %s материи",
+  "item.quantx.granite_dust": "Гранитная пыль",
+  "item.quantx.granite_plate": "Гранитная пластина",
+  "item.quantx.granite_frame": "Гранитная рама",
+
+  "item.quantx.matter_pack": "Материальный ранец",
+  "item.quantx.matter_pack.desc": "Носится в слоте слева от нагрудника.",
+  "item.quantx.matter_pack.bonus": "Расширяет бак пушки на %s материи",
+
+  "tooltip.quantx.matter_cost": "Стоимость создания: %s материи",
+  "tooltip.quantx.matter_demat": "Стоимость разбора: %s материи",
   "tooltip.quantx.matter_yield": "%s",
+
+  "itemGroup.quantx": "QuantX",
 
   "advancement.quantx.root.title": "QuantX",
   "advancement.quantx.root.desc": "Создайте материализатор",

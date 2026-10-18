@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "LEL",
+    "PLP",
+    "LLL"
+  ],
+  "key": {
+    "L": "minecraft:leather",
+    "E": "minecraft:ender_pearl",
+    "P": "quantx:granite_plate"
+  },
+  "result": {
+    "id": "quantx:matter_pack",
+    "count": 1
+  }
+}

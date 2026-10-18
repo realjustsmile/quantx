@@ -1,0 +1,33 @@
+{
+  "parent": "block/block",
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "particle": "quantx:block/quantum_fiber",
+    "sleeve": "quantx:block/quantum_fiber_sleeve",
+    "core": "quantx:block/quantum_fiber"
+  },
+  "elements": [
+    {
+      "from": [ 6, 6, 0 ],
+      "to": [ 10, 10, 16 ],
+      "faces": {
+        "east":  { "uv": [ 0, 6, 16, 10 ], "texture": "#sleeve" },
+        "west":  { "uv": [ 0, 6, 16, 10 ], "texture": "#sleeve" },
+        "up":    { "uv": [ 6, 0, 10, 16 ], "texture": "#sleeve" },
+        "down":  { "uv": [ 6, 0, 10, 16 ], "texture": "#sleeve" }
+      }
+    },
+    {
+      "from": [ 7, 7, 0 ],
+      "to": [ 9, 9, 16 ],
+      "faces": {
+        "north": { "uv": [ 7, 7, 9, 9 ], "texture": "#core" },
+        "east":  { "uv": [ 0, 7, 16, 9 ], "texture": "#core" },
+        "south": { "uv": [ 7, 7, 9, 9 ], "texture": "#core" },
+        "west":  { "uv": [ 0, 7, 16, 9 ], "texture": "#core" },
+        "up":    { "uv": [ 7, 0, 9, 16 ], "texture": "#core" },
+        "down":  { "uv": [ 7, 0, 9, 16 ], "texture": "#core" }
+      }
+    }
+  ]
+}

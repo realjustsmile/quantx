@@ -1,0 +1,21 @@
+{
+  "parent": "block/block",
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "particle": "quantx:block/matter_accelerator_out",
+    "out": "quantx:block/matter_accelerator_out"
+  },
+  "elements": [
+    {
+      "comment": "Выходное сопло-кольцо: торцевой грани нет — провод выходит из открытого сопла, нет коллизии текстур.",
+      "from": [ 5, 5, 0 ],
+      "to": [ 11, 11, 4 ],
+      "faces": {
+        "east":  { "uv": [ 0, 5, 4, 11 ], "texture": "#out" },
+        "west":  { "uv": [ 12, 5, 16, 11 ], "texture": "#out" },
+        "up":    { "uv": [ 5, 0, 11, 4 ], "texture": "#out" },
+        "down":  { "uv": [ 5, 0, 11, 4 ], "texture": "#out" }
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "parent": "block/block",
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "particle": "quantx:block/quantum_fiber_flow",
+    "flow": "quantx:block/quantum_fiber_flow"
+  },
+  "elements": [
+    {
+      "from": [ 7, 7, 0 ],
+      "to": [ 9, 9, 7 ],
+      "faces": {
+        "east":  { "uv": [ 0, 7, 7, 9 ], "texture": "#flow" },
+        "west":  { "uv": [ 0, 7, 7, 9 ], "texture": "#flow" },
+        "up":    { "uv": [ 7, 0, 9, 7 ], "texture": "#flow" },
+        "down":  { "uv": [ 7, 0, 9, 7 ], "texture": "#flow" }
+      }
+    }
+  ]
+}

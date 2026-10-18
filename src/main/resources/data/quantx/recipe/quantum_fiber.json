@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "DRD"
+  ],
+  "key": {
+    "D": "quantx:granite_dust",
+    "R": "minecraft:redstone"
+  },
+  "result": {
+    "id": "quantx:quantum_fiber",
+    "count": 4
+  }
+}
