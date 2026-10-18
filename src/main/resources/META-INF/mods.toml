@@ -5,10 +5,10 @@ license="All Rights Reserved"
 [[mods]]
 modId="quantx"
 version="1.0.0"
-displayName="Aquantic"
+displayName="QuantX"
 authors="JUST SMILE"
 description='''
-Aquantic 1.0.0 — мод для Minecraft 26.3, требуется Forge.
+QuantX 1.0.0 — мод для Minecraft 26.3, требуется Forge.
 Сканируйте предметы, разбирайте их в чистую материю и собирайте
 заново в материализаторе. Автоматическая сеть из квантовых волокон,
 ускорителей, клапанов и счётчиков потока переносит материю под
