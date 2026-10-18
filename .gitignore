@@ -49,3 +49,6 @@ src/generated/
 # === OS ===
 .DS_Store
 Thumbs.db
+
+# === Маркетинговые ассеты ===
+quantx_cover.png
