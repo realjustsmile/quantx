@@ -27,6 +27,7 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.bus.BusGroup;
 import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -42,11 +43,15 @@ import ru.justsmile.quantx.block.MaterializerBlock;
 import ru.justsmile.quantx.block.MaterializerBlockEntity;
 import ru.justsmile.quantx.block.MatterAcceleratorBlock;
 import ru.justsmile.quantx.block.MatterAcceleratorBlockEntity;
+import ru.justsmile.quantx.block.MatterFlowMeterBlock;
+import ru.justsmile.quantx.block.MatterFlowMeterBlockEntity;
 import ru.justsmile.quantx.block.MatterStorageBlock;
+import ru.justsmile.quantx.block.MatterValveBlock;
 import ru.justsmile.quantx.block.MatterStorageBlockEntity;
 import ru.justsmile.quantx.block.QuantumFiberBlock;
 import ru.justsmile.quantx.block.QuantumFiberBlockEntity;
 import ru.justsmile.quantx.client.QuantXClient;
+import ru.justsmile.quantx.item.GuideBookItem;
 import ru.justsmile.quantx.item.MatterGunItem;
 import ru.justsmile.quantx.item.MatterPackItem;
 import ru.justsmile.quantx.item.PunchCardItem;
@@ -121,10 +126,29 @@ public class QuantX {
                     .setId(blockKey("matter_accelerator")).noOcclusion()));
     public static final RegistryObject<Item> MATTER_ACCELERATOR_ITEM = ITEMS.register("matter_accelerator",
             () -> new BlockItem(MATTER_ACCELERATOR.get(), new Item.Properties().setId(itemKey("matter_accelerator"))));
+    /** Волоконный клапан — помпа, качающая только по redstone-сигналу. */
+    public static final RegistryObject<Block> MATTER_VALVE = BLOCKS.register("matter_valve",
+            () -> new MatterValveBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.GLASS)
+                    .setId(blockKey("matter_valve")).noOcclusion()));
+    public static final RegistryObject<Item> MATTER_VALVE_ITEM = ITEMS.register("matter_valve",
+            () -> new BlockItem(MATTER_VALVE.get(), new Item.Properties().setId(itemKey("matter_valve"))));
+
+    /** Тип BE общий: клапан — это ускоритель с redstone-гейтингом. */
     public static final RegistryObject<BlockEntityType<MatterAcceleratorBlockEntity>> MATTER_ACCELERATOR_BE =
             BLOCK_ENTITIES.register("matter_accelerator",
                     () -> new BlockEntityType<>(MatterAcceleratorBlockEntity::new,
-                            Set.of(MATTER_ACCELERATOR.get())));
+                            Set.of(MATTER_ACCELERATOR.get(), MATTER_VALVE.get())));
+
+    /** Счётчик потока — пассивный узел сети с компараторным выходом скорости. */
+    public static final RegistryObject<Block> MATTER_FLOW_METER = BLOCKS.register("matter_flow_meter",
+            () -> new MatterFlowMeterBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.GLASS)
+                    .setId(blockKey("matter_flow_meter")).noOcclusion()));
+    public static final RegistryObject<Item> MATTER_FLOW_METER_ITEM = ITEMS.register("matter_flow_meter",
+            () -> new BlockItem(MATTER_FLOW_METER.get(), new Item.Properties().setId(itemKey("matter_flow_meter"))));
+    public static final RegistryObject<BlockEntityType<MatterFlowMeterBlockEntity>> MATTER_FLOW_METER_BE =
+            BLOCK_ENTITIES.register("matter_flow_meter",
+                    () -> new BlockEntityType<>(MatterFlowMeterBlockEntity::new,
+                            Set.of(MATTER_FLOW_METER.get())));
 
     /** Перфокарта — перенос изученных рецептов. В стаке 1 шт., хранит данные. */
     public static final RegistryObject<Item> PUNCH_CARD = ITEMS.register("punch_card",
@@ -157,6 +181,11 @@ public class QuantX {
             () -> new MatterPackItem(new Item.Properties()
                     .setId(itemKey("matter_pack")).stacksTo(1)));
 
+    /** Справочник QuantX — книга с иллюстрированными рецептами мода. */
+    public static final RegistryObject<Item> GUIDE_BOOK = ITEMS.register("guide_book",
+            () -> new GuideBookItem(new Item.Properties()
+                    .setId(itemKey("guide_book")).stacksTo(1)));
+
     /** Собственная вкладка мода в креативе. */
     public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
@@ -170,9 +199,12 @@ public class QuantX {
                         output.accept(PUNCH_CARD.get());
                         output.accept(MATTER_GUN.get());
                         output.accept(MATTER_PACK.get());
+                        output.accept(GUIDE_BOOK.get());
                         output.accept(MATTER_STORAGE.get());
                         output.accept(QUANTUM_FIBER.get());
                         output.accept(MATTER_ACCELERATOR.get());
+                        output.accept(MATTER_VALVE.get());
+                        output.accept(MATTER_FLOW_METER.get());
                         output.accept(GRANITE_DUST.get());
                         output.accept(GRANITE_PLATE.get());
                         output.accept(GRANITE_FRAME.get());
@@ -240,6 +272,12 @@ public class QuantX {
                 MatterValues.formatMicro(yield)));
     }
 
+    /** Стартовая книга-гайд с рецептами — один раз на мир. */
+    @SubscribeEvent
+    private static void giveGuideBook(PlayerEvent.PlayerLoggedInEvent event) {
+        QuantXGuideBook.giveIfFirstLogin(event);
+    }
+
     @SubscribeEvent
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("QuantX успешно загружен!");
@@ -261,11 +299,14 @@ public class QuantX {
         if (event.getTabKey() == CreativeModeTabs.REDSTONE_BLOCKS) {
             event.accept(QUANTUM_FIBER_ITEM);
             event.accept(MATTER_ACCELERATOR_ITEM);
+            event.accept(MATTER_VALVE_ITEM);
+            event.accept(MATTER_FLOW_METER_ITEM);
         }
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(PUNCH_CARD);
             event.accept(MATTER_GUN);
             event.accept(MATTER_PACK);
+            event.accept(GUIDE_BOOK);
         }
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
             event.accept(GRANITE_DUST);

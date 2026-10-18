@@ -75,13 +75,26 @@ public class MatterAcceleratorBlockEntity extends BlockEntity implements MatterC
                             MatterAcceleratorBlockEntity be) {
         if (level.isClientSide()) return;
 
-        be.transfer(level.getGameTime(), 0);
+        // Клапан перекачивает только когда открыт redstone-сигналом.
+        if (isOpen(state)) {
+            be.transfer(level.getGameTime(), 0);
+        }
 
         // Анимация потока гаснет, если помпа не перекачивала пару тиков.
         if (state.getValue(MatterAcceleratorBlock.FLOW)
                 && level.getGameTime() - be.lastFlowTick > 4) {
             level.setBlock(pos, state.setValue(MatterAcceleratorBlock.FLOW, false), 3);
         }
+    }
+
+    /**
+     * Открыт ли этот сегмент: ускоритель — всегда, клапан — когда
+     * его redstone-режим (с учётом инверсии) пропускает поток.
+     */
+    public static boolean isOpen(BlockState state) {
+        return !(state.getBlock() instanceof MatterValveBlock)
+                || state.getValue(MatterValveBlock.POWERED)
+                        != state.getValue(MatterValveBlock.INVERTED);
     }
 
     // ======================= Перекачка (атомарно) =======================
@@ -144,7 +157,7 @@ public class MatterAcceleratorBlockEntity extends BlockEntity implements MatterC
                 case PumpEnd p -> p.pump().provideOut(level, share, depth + 1);
             };
             if (pulled > 0) {
-                src.markFlow(level, level.getGameTime());
+                src.markFlow(level, level.getGameTime(), pulled);
                 taken += pulled;
                 remaining -= pulled;
             }
@@ -202,7 +215,7 @@ public class MatterAcceleratorBlockEntity extends BlockEntity implements MatterC
                 case PumpEnd p -> p.pump().forwardThrough(level, share, depth + 1);
             };
             if (accepted > 0) {
-                sink.markFlow(level, level.getGameTime());
+                sink.markFlow(level, level.getGameTime(), accepted);
                 put += accepted;
                 remaining -= accepted;
             }
@@ -241,30 +254,34 @@ public class MatterAcceleratorBlockEntity extends BlockEntity implements MatterC
 
     /** Конец линии: бак или соседняя помпа + путь проводов до неё. */
     private sealed interface Endpoint {
-        void markFlow(Level level, long gameTime);
+        void markFlow(Level level, long gameTime, long amount);
     }
 
     private record TankEnd(MatterTank tank, List<BlockPos> path)
             implements Endpoint {
         @Override
-        public void markFlow(Level level, long gameTime) {
-            markWires(level, path, gameTime);
+        public void markFlow(Level level, long gameTime, long amount) {
+            markWires(level, path, gameTime, amount);
         }
     }
 
     private record PumpEnd(MatterAcceleratorBlockEntity pump, List<BlockPos> path)
             implements Endpoint {
         @Override
-        public void markFlow(Level level, long gameTime) {
-            markWires(level, path, gameTime);
+        public void markFlow(Level level, long gameTime, long amount) {
+            markWires(level, path, gameTime, amount);
             pump.markFlow(gameTime);
         }
     }
 
-    private static void markWires(Level level, List<BlockPos> path, long gameTime) {
+    private static void markWires(Level level, List<BlockPos> path, long gameTime,
+                                  long amount) {
         for (BlockPos p : path) {
-            if (level.getBlockEntity(p) instanceof QuantumFiberBlockEntity wire) {
-                wire.markFlow(gameTime);
+            BlockEntity wire = level.getBlockEntity(p);
+            if (wire instanceof QuantumFiberBlockEntity fiber) {
+                fiber.markFlow(gameTime);
+            } else if (wire instanceof MatterFlowMeterBlockEntity meter) {
+                meter.markFlow(gameTime, amount);
             }
         }
     }
@@ -307,6 +324,7 @@ public class MatterAcceleratorBlockEntity extends BlockEntity implements MatterC
                         p.getY() - from.getY(),
                         p.getZ() - from.getZ(), null);
                 boolean facingUs = contact != null
+                        && isOpen(acc.getBlockState())                      // закрытый клапан — тупик
                         && (source
                             ? acc.getFacing() == contact.getOpposite()      // выводит в нас
                             : acc.getFacing() == contact);                  // входом к нам
@@ -315,7 +333,18 @@ public class MatterAcceleratorBlockEntity extends BlockEntity implements MatterC
                 }
                 continue; // помпа — конец или тупик, но не провод
             }
-            if (be instanceof QuantumFiberBlockEntity) {
+            if (be instanceof MatterFlowMeterBlockEntity) {
+                // Счётчик проводит только к узлам сети: бак вплотную
+                // без волокна — не подключение и не конец линии.
+                for (Direction d : Direction.values()) {
+                    BlockPos next = p.relative(d);
+                    if (level.getBlockEntity(next) instanceof MatterConduit
+                            && seen.add(next)) {
+                        prev.put(next, p);
+                        queue.add(next);
+                    }
+                }
+            } else if (be instanceof MatterConduit) { // волокна — провода
                 for (Direction d : Direction.values()) {
                     BlockPos next = p.relative(d);
                     if (seen.add(next)) {

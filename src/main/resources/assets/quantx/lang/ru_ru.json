@@ -7,6 +7,10 @@
   "item.quantx.quantum_fiber": "Квантовое волокно",
   "block.quantx.matter_accelerator": "Волоконный ускоритель материи",
   "item.quantx.matter_accelerator": "Волоконный ускоритель материи",
+  "block.quantx.matter_valve": "Волоконный клапан материи",
+  "item.quantx.matter_valve": "Волоконный клапан материи",
+  "block.quantx.matter_flow_meter": "Счётчик потока материи",
+  "item.quantx.matter_flow_meter": "Счётчик потока материи",
 
   "block.quantx.matter_storage.matter": "Материя: %s / %s",
 
@@ -61,5 +65,32 @@
   "advancement.quantx.mat.title": "Из ничего",
   "advancement.quantx.mat.desc": "Соберите изученный предмет из материи",
   "advancement.quantx.card.title": "Портативное знание",
-  "advancement.quantx.card.desc": "Получите перфокарту"
+  "advancement.quantx.card.desc": "Получите перфокарту",
+
+  "item.quantx.guide_book": "Справочник QuantX",
+  "item.quantx.guide_book.desc": "ПКМ — открыть иллюстрированный гайд по рецептам мода.",
+
+  "guide.quantx.subtitle": "Справочник по материи",
+  "guide.quantx.shapeless": "без сетки",
+  "guide.quantx.cover.1": "Все рецепты QuantX с картинками",
+  "guide.quantx.cover.2": "Наведите курсор на ячейку — подсказка",
+  "guide.quantx.cover.3": "◀ ▶ или стрелки — листать · Esc — закрыть",
+  "guide.quantx.tips.title": "Советы",
+  "guide.quantx.tips.1": "Ускоритель и клапан выводят из толстого сопла",
+  "guide.quantx.tips.2": "Клапан качает под сигналом редстоуна",
+  "guide.quantx.tips.3": "Счётчик передаёт только по волокнам",
+
+  "guide.quantx.name.granite_dust": "Пыль гранита",
+  "guide.quantx.name.granite_plate": "Пластина",
+  "guide.quantx.name.granite_frame": "Рама",
+  "guide.quantx.name.punch_card": "Перфокарта",
+  "guide.quantx.name.quantum_fiber": "Волокно",
+  "guide.quantx.name.matter_storage": "Хранилище",
+  "guide.quantx.name.matter_accelerator": "Ускоритель",
+  "guide.quantx.name.matter_valve": "Клапан",
+  "guide.quantx.name.matter_flow_meter": "Счётчик",
+  "guide.quantx.name.materializer": "Материализатор",
+  "guide.quantx.name.matter_gun": "Пушка",
+  "guide.quantx.name.matter_pack": "Ранец",
+  "guide.quantx.name.guide_book": "Справочник"
 }

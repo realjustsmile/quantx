@@ -1,0 +1,13 @@
+{
+  "multipart": [
+    { "apply": { "model": "quantx:block/matter_accelerator_node" } },
+    { "when": { "flow": "true" }, "apply": { "model": "quantx:block/matter_accelerator_node_flow" } },
+
+    { "when": { "conn_north": "true" }, "apply": { "model": "quantx:block/quantum_fiber_arm" } },
+    { "when": { "conn_east": "true" },  "apply": { "model": "quantx:block/quantum_fiber_arm", "y": 90, "uvlock": true } },
+    { "when": { "conn_south": "true" }, "apply": { "model": "quantx:block/quantum_fiber_arm", "y": 180, "uvlock": true } },
+    { "when": { "conn_west": "true" },  "apply": { "model": "quantx:block/quantum_fiber_arm", "y": 270, "uvlock": true } },
+    { "when": { "conn_up": "true" },    "apply": { "model": "quantx:block/quantum_fiber_arm", "x": 270, "uvlock": true } },
+    { "when": { "conn_down": "true" },  "apply": { "model": "quantx:block/quantum_fiber_arm", "x": 90, "uvlock": true } }
+  ]
+}

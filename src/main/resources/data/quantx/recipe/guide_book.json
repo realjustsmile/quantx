@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "minecraft:book",
+    "quantx:granite_dust"
+  ],
+  "result": {
+    "id": "quantx:guide_book",
+    "count": 1
+  }
+}

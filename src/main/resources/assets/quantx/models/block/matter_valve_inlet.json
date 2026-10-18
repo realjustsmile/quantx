@@ -1,0 +1,23 @@
+{
+  "parent": "block/block",
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "particle": "quantx:block/matter_valve_in",
+    "in": "quantx:block/matter_valve_in",
+    "side": "quantx:block/matter_valve_side"
+  },
+  "elements": [
+    {
+      "comment": "Входная горловина клапана: только когда вход не подключён.",
+      "from": [ 6, 6, 12 ],
+      "to": [ 10, 10, 16 ],
+      "faces": {
+        "south": { "uv": [ 6, 6, 10, 10 ], "texture": "#in" },
+        "east":  { "uv": [ 0, 6, 4, 10 ], "texture": "#side" },
+        "west":  { "uv": [ 12, 6, 16, 10 ], "texture": "#side" },
+        "up":    { "uv": [ 6, 12, 10, 16 ], "texture": "#side" },
+        "down":  { "uv": [ 6, 12, 10, 16 ], "texture": "#side" }
+      }
+    }
+  ]
+}

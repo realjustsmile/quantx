@@ -7,6 +7,10 @@
   "item.quantx.quantum_fiber": "Quantum Fiber",
   "block.quantx.matter_accelerator": "Fiber Matter Accelerator",
   "item.quantx.matter_accelerator": "Fiber Matter Accelerator",
+  "block.quantx.matter_valve": "Fiber Matter Valve",
+  "item.quantx.matter_valve": "Fiber Matter Valve",
+  "block.quantx.matter_flow_meter": "Matter Flow Meter",
+  "item.quantx.matter_flow_meter": "Matter Flow Meter",
 
 
   "block.quantx.matter_storage.matter": "Matter: %s / %s",
@@ -62,5 +66,32 @@
   "advancement.quantx.mat.title": "Something from Nothing",
   "advancement.quantx.mat.desc": "Materialize a learned item from matter",
   "advancement.quantx.card.title": "Portable Knowledge",
-  "advancement.quantx.card.desc": "Obtain a punch card"
+  "advancement.quantx.card.desc": "Obtain a punch card",
+
+  "item.quantx.guide_book": "QuantX Field Guide",
+  "item.quantx.guide_book.desc": "RMB — open the illustrated mod recipe guide.",
+
+  "guide.quantx.subtitle": "Matter Field Guide",
+  "guide.quantx.shapeless": "shapeless",
+  "guide.quantx.cover.1": "Every QuantX recipe, illustrated",
+  "guide.quantx.cover.2": "Hover a slot for the item tooltip",
+  "guide.quantx.cover.3": "◀ ▶ or arrow keys — turn pages · Esc — close",
+  "guide.quantx.tips.title": "Tips",
+  "guide.quantx.tips.1": "Accelerator and valve output via the thick nozzle",
+  "guide.quantx.tips.2": "The valve pumps only while powered",
+  "guide.quantx.tips.3": "The meter routes only through fibers",
+
+  "guide.quantx.name.granite_dust": "Granite Dust",
+  "guide.quantx.name.granite_plate": "Plate",
+  "guide.quantx.name.granite_frame": "Frame",
+  "guide.quantx.name.punch_card": "Punch Card",
+  "guide.quantx.name.quantum_fiber": "Fiber",
+  "guide.quantx.name.matter_storage": "Storage",
+  "guide.quantx.name.matter_accelerator": "Accelerator",
+  "guide.quantx.name.matter_valve": "Valve",
+  "guide.quantx.name.matter_flow_meter": "Flow Meter",
+  "guide.quantx.name.materializer": "Materializer",
+  "guide.quantx.name.matter_gun": "Matter Gun",
+  "guide.quantx.name.matter_pack": "Backpack",
+  "guide.quantx.name.guide_book": "Field Guide"
 }

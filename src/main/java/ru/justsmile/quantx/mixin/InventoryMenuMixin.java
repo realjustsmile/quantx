@@ -35,7 +35,7 @@ public abstract class InventoryMenuMixin extends AbstractContainerMenu {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void quantx$addMatterPackSlot(Inventory inventory, boolean active,
                                           Player owner, CallbackInfo ci) {
-        this.addSlot(new Slot(new MatterPackContainer(owner), 0, -10, 24) {
+        this.addSlot(new Slot(new MatterPackContainer(owner), 0, -10, 28) {
             @Override
             public boolean mayPlace(ItemStack stack) {
                 return stack.is(QuantX.MATTER_PACK.get());

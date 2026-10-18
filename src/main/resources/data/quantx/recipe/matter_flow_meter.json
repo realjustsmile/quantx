@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "quantx:quantum_fiber",
+    "minecraft:comparator"
+  ],
+  "result": {
+    "id": "quantx:matter_flow_meter",
+    "count": 1
+  }
+}
