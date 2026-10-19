@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PFP",
+    "FSF",
+    "PFP"
+  ],
+  "key": {
+    "P": "quantx:granite_plate",
+    "F": "quantx:granite_frame_2",
+    "S": "quantx:matter_storage"
+  },
+  "result": {
+    "id": "quantx:matter_storage_2",
+    "count": 1
+  }
+}

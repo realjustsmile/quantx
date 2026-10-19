@@ -24,4 +24,13 @@ public interface MatterTank {
      * бак пуст).
      */
     long takeMatter(long micro);
+
+    /**
+     * Максимальная скорость обмена с сетью, мк/тик.
+     * По умолчанию — эталонная скорость сегмента волокна (100 ед/с).
+     * Старшие тиры переопределяют больше.
+     */
+    default long getTransferRateMicro() {
+        return QuantumFiberBlockEntity.RATE_MICRO;
+    }
 }

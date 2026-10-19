@@ -6,6 +6,9 @@
   "mixins": [
     "InventoryMenuMixin"
   ],
+  "client": [
+    "client.SlotAccessor"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

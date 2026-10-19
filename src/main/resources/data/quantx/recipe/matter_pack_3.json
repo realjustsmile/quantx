@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " F ",
+    "FPF",
+    " F "
+  ],
+  "key": {
+    "F": "quantx:granite_frame_3",
+    "P": "quantx:matter_pack_2"
+  },
+  "result": {
+    "id": "quantx:matter_pack_3",
+    "count": 1
+  }
+}

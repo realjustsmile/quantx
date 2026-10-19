@@ -7,7 +7,7 @@
   ],
   "key": {
     "P": "quantx:granite_plate",
-    "D": "minecraft:diamond",
+    "D": "minecraft:diamond_block",
     "R": "minecraft:redstone",
     "F": "quantx:granite_frame"
   },

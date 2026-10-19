@@ -20,8 +20,20 @@ import ru.justsmile.quantx.matter.MatterValues;
  */
 public class MatterStorageBlock extends Block implements EntityBlock {
 
+    /** Тир хранилища: 1, 2 или 3. Определяет ёмкость и скорость обмена. */
+    private final int tier;
+
     public MatterStorageBlock(Properties properties) {
+        this(properties, 1);
+    }
+
+    public MatterStorageBlock(Properties properties, int tier) {
         super(properties);
+        this.tier = tier;
+    }
+
+    public int getTier() {
+        return tier;
     }
 
     @Nullable

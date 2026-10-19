@@ -17,17 +17,37 @@ import ru.justsmile.quantx.matter.MatterValues;
 import ru.justsmile.quantx.menu.MatterPackContainer;
 
 /**
- * Ранец материи — носится в отдельном слоте инвентаря (слева от нагрудника).
- * Увеличивает вместимость бака материальной пушки на 40 000 единиц.
+ * Материальный ранец — носится в отдельном слоте инвентаря
+ * (слева от нагрудника). Увеличивает вместимость бака материальной
+ * пушки: I — на 40 000 ед., II — на 400 000 ед., III — на 4 000 000 ед.
  * Shift+ПКМ ранцем в руке — надеть в свой слот.
  */
 public class MatterPackItem extends Item {
 
-    /** Бонус к вместимости пушки (в микро): 40 000 единиц. */
-    public static final long BONUS_MICRO = 400_000L;
+    /** Бонус к вместимости пушки по тирам (в микро). */
+    private static final long[] BONUS_MICRO = {
+            400_000L, 4_000_000L, 40_000_000L};
+
+    /** Бонус конкретного ранца (0, если это не MatterPackItem). */
+    public static long bonusFor(net.minecraft.world.item.ItemStack stack) {
+        return (stack.getItem() instanceof MatterPackItem pack)
+                ? pack.bonusMicro()
+                : 0L;
+    }
+
+    private final int tier;
 
     public MatterPackItem(Properties properties) {
+        this(properties, 1);
+    }
+
+    public MatterPackItem(Properties properties, int tier) {
         super(properties);
+        this.tier = Math.min(3, Math.max(1, tier));
+    }
+
+    public long bonusMicro() {
+        return BONUS_MICRO[tier - 1];
     }
 
     /** Shift+ПКМ — надеть ранец в выделенный слот инвентаря. */
@@ -60,6 +80,6 @@ public class MatterPackItem extends Item {
                                 TooltipFlag flag) {
         builder.accept(Component.translatable("item.quantx.matter_pack.desc"));
         builder.accept(Component.translatable("item.quantx.matter_pack.bonus",
-                MatterValues.formatMicro(BONUS_MICRO)));
+                MatterValues.formatMicro(bonusMicro())));
     }
 }

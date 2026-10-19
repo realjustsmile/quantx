@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "quantx:block/matter_storage_3" }
+  }
+}

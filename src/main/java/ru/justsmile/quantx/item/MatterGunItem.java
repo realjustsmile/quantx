@@ -53,8 +53,9 @@ public class MatterGunItem extends Item {
      * базовая + бонус ранца материи, если он надет в своём слоте.
      */
     public static long capacityFor(@Nullable Player player) {
-        if (player != null && MatterPackContainer.isWearingPack(player)) {
-            return CAPACITY_MICRO + MatterPackItem.BONUS_MICRO;
+        if (player != null) {
+            ItemStack pack = MatterPackContainer.getPackStack(player);
+            return CAPACITY_MICRO + MatterPackItem.bonusFor(pack);
         }
         return CAPACITY_MICRO;
     }

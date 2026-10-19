@@ -1,6 +1,11 @@
 {
   "replace": false,
   "values": [
-    "quantx:materializer"
+    "quantx:materializer",
+    "quantx:materializer_2",
+    "quantx:materializer_3",
+    "quantx:matter_storage",
+    "quantx:matter_storage_2",
+    "quantx:matter_storage_3"
   ]
 }

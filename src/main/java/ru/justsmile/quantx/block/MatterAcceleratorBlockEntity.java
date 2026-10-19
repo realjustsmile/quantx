@@ -133,7 +133,8 @@ public class MatterAcceleratorBlockEntity extends BlockEntity implements MatterC
         long total = 0L;
         for (Endpoint src : findEndpoints(level, getFacing().getOpposite(), true)) {
             total += switch (src) {
-                case TankEnd t -> Math.min(want, t.tank().getMatterMicro());
+                case TankEnd t -> Math.min(Math.min(want, t.tank().getMatterMicro()),
+                        t.tank().getTransferRateMicro());
                 case PumpEnd p -> p.pump().provideOutPeek(level, want, depth + 1);
             };
         }
@@ -152,8 +153,11 @@ public class MatterAcceleratorBlockEntity extends BlockEntity implements MatterC
             Endpoint src = srcs.get(i);
             long share = remaining / (srcs.size() - i);
             if (share <= 0) break;
+            // Скорость источника ограничивает его долю: медленный бак
+            // не отдаст быстрее своего рейтинга даже в быструю сеть.
             long pulled = switch (src) {
-                case TankEnd t -> t.tank().takeMatter(share);
+                case TankEnd t -> t.tank().takeMatter(
+                        Math.min(share, t.tank().getTransferRateMicro()));
                 case PumpEnd p -> p.pump().provideOut(level, share, depth + 1);
             };
             if (pulled > 0) {
@@ -190,8 +194,9 @@ public class MatterAcceleratorBlockEntity extends BlockEntity implements MatterC
         long total = 0L;
         for (Endpoint sink : findEndpoints(level, getFacing(), false)) {
             total += switch (sink) {
-                case TankEnd t -> Math.min(want,
-                        t.tank().getCapacityMicro() - t.tank().getMatterMicro());
+                case TankEnd t -> Math.min(Math.min(want,
+                        t.tank().getCapacityMicro() - t.tank().getMatterMicro()),
+                        t.tank().getTransferRateMicro());
                 case PumpEnd p -> p.pump().forwardThroughPeek(level, want, depth + 1);
             };
         }
@@ -210,8 +215,11 @@ public class MatterAcceleratorBlockEntity extends BlockEntity implements MatterC
             Endpoint sink = sinks.get(i);
             long share = remaining / (sinks.size() - i);
             if (share <= 0) break;
+            // Скорость приёмника ограничивает его долю — быстрая линия
+            // в медленный бак ждёт его рейтинг.
             long accepted = switch (sink) {
-                case TankEnd t -> t.tank().addMatter(share);
+                case TankEnd t -> t.tank().addMatter(
+                        Math.min(share, t.tank().getTransferRateMicro()));
                 case PumpEnd p -> p.pump().forwardThrough(level, share, depth + 1);
             };
             if (accepted > 0) {

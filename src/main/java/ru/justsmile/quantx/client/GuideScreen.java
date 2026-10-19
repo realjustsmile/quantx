@@ -127,10 +127,12 @@ public final class GuideScreen extends Screen {
     private static List<RecipeCard> buildCards() {
         ItemStack G = s(Items.GRANITE);          ItemStack D = s(QuantX.GRANITE_DUST.get());
         ItemStack P = s(QuantX.GRANITE_PLATE.get()); ItemStack F = s(QuantX.GRANITE_FRAME.get());
+        ItemStack F2 = s(QuantX.GRANITE_FRAME_2.get()); ItemStack F3 = s(QuantX.GRANITE_FRAME_3.get());
         ItemStack I = s(Items.IRON_INGOT);       ItemStack R = s(Items.REDSTONE);
         ItemStack GL = s(Items.GLASS);           ItemStack FB = s(QuantX.QUANTUM_FIBER_ITEM.get());
-        ItemStack DM = s(Items.DIAMOND);         ItemStack L = s(Items.LEATHER);
-        ItemStack E = s(Items.ENDER_PEARL);
+        ItemStack DM = s(Items.DIAMOND_BLOCK);   ItemStack L = s(Items.LEATHER);
+        ItemStack E = s(Items.ENDER_PEARL);      ItemStack AU = s(Items.GOLD_INGOT);
+        ItemStack DI = s(Items.DIAMOND);
 
         List<RecipeCard> c = new ArrayList<>();
         // Материалы
@@ -138,6 +140,10 @@ public final class GuideScreen extends Screen {
         c.add(card("granite_plate", grid(Map.of('D', D), "DD", "DD"), s(P.getItem()), false));
         c.add(card("granite_frame", grid(Map.of('P', P, 'I', I), "PPP", "PIP", "PPP"),
                 s(F.getItem()), false));
+        c.add(card("granite_frame_2", grid(Map.of('G', AU, 'F', F), "GGG", "GFG", "GGG"),
+                s(F2.getItem()), false));
+        c.add(card("granite_frame_3", grid(Map.of('D', DI, 'F', F2), "DDD", "DFD", "DDD"),
+                s(F3.getItem()), false));
         c.add(card("punch_card", loose(s(Items.PAPER), s(Items.COPPER_INGOT), R, D),
                 s(QuantX.PUNCH_CARD.get()), true));
         // Сеть
@@ -145,6 +151,10 @@ public final class GuideScreen extends Screen {
                 s(FB.getItem(), 4), false));
         c.add(card("matter_storage", grid(Map.of('P', P, 'G', GL, 'F', F), "PGP", "GFG", "PGP"),
                 s(QuantX.MATTER_STORAGE_ITEM.get()), false));
+        c.add(card("matter_storage_2", grid(Map.of('P', P, 'F', F2, 'S', s(QuantX.MATTER_STORAGE_ITEM.get())),
+                "PFP", "FSF", "PFP"), s(QuantX.MATTER_STORAGE_2_ITEM.get()), false));
+        c.add(card("matter_storage_3", grid(Map.of('F', F2, 'T', F3, 'S', s(QuantX.MATTER_STORAGE_2_ITEM.get())),
+                "FTF", "TST", "FTF"), s(QuantX.MATTER_STORAGE_3_ITEM.get()), false));
         c.add(card("matter_accelerator", grid(Map.of('P', P, 'D', D, 'G', FB), "PDP", "DGD", "PDP"),
                 s(QuantX.MATTER_ACCELERATOR_ITEM.get()), false));
         c.add(card("matter_valve", loose(s(QuantX.MATTER_ACCELERATOR_ITEM.get()), s(Items.REDSTONE_TORCH)),
@@ -154,10 +164,22 @@ public final class GuideScreen extends Screen {
                 s(QuantX.MATTER_FLOW_METER_ITEM.get()), true));
         c.add(card("materializer", grid(Map.of('P', P, 'I', I, 'R', R, 'F', F), "PIP", "RFR", "PIP"),
                 s(QuantX.MATERIALIZER_ITEM.get()), false));
+        c.add(card("materializer_2", grid(Map.of('F', F2, 'M', s(QuantX.MATERIALIZER_ITEM.get())),
+                "FFF", "FMF", "FFF"), s(QuantX.MATERIALIZER_2_ITEM.get()), false));
+        c.add(card("materializer_3", grid(Map.of('F', F3, 'M', s(QuantX.MATERIALIZER_2_ITEM.get())),
+                "FFF", "FMF", "FFF"), s(QuantX.MATERIALIZER_3_ITEM.get()), false));
+        c.add(card("materializer_upgrade_2", grid(Map.of('F', F2, 'R', R), "FFF", "FRF", "FFF"),
+                s(QuantX.MATERIALIZER_UPGRADE_2.get()), false));
+        c.add(card("materializer_upgrade_3", grid(Map.of('F', F3, 'R', R), "FFF", "FRF", "FFF"),
+                s(QuantX.MATERIALIZER_UPGRADE_3.get()), false));
         c.add(card("matter_gun", grid(Map.of('P', P, 'D', DM, 'R', R, 'F', F), "PDP", "RFR", ".P."),
                 s(QuantX.MATTER_GUN.get()), false));
         c.add(card("matter_pack", grid(Map.of('L', L, 'E', E, 'P', P), "LEL", "PLP", "LLL"),
                 s(QuantX.MATTER_PACK.get()), false));
+        c.add(card("matter_pack_2", grid(Map.of('F', F2, 'P', s(QuantX.MATTER_PACK.get())),
+                ".F.", "FPF", ".F."), s(QuantX.MATTER_PACK_2.get()), false));
+        c.add(card("matter_pack_3", grid(Map.of('F', F3, 'P', s(QuantX.MATTER_PACK_2.get())),
+                ".F.", "FPF", ".F."), s(QuantX.MATTER_PACK_3.get()), false));
         // Сама книга
         c.add(card("guide_book", loose(s(Items.BOOK), D), s(QuantX.GUIDE_BOOK.get()), true));
         return c;

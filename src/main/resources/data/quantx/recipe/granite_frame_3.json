@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "DDD",
+    "DFD",
+    "DDD"
+  ],
+  "key": {
+    "D": "minecraft:diamond",
+    "F": "quantx:granite_frame_2"
+  },
+  "result": {
+    "id": "quantx:granite_frame_3",
+    "count": 1
+  }
+}

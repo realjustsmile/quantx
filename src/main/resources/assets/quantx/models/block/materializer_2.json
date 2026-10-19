@@ -1,0 +1,12 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "particle": "quantx:block/materializer_2_front",
+    "down": "quantx:block/materializer_2_bottom",
+    "up": "quantx:block/materializer_2_top",
+    "north": "quantx:block/materializer_2_front",
+    "south": "quantx:block/materializer_2_back",
+    "east": "quantx:block/materializer_2_right",
+    "west": "quantx:block/materializer_2_left"
+  }
+}

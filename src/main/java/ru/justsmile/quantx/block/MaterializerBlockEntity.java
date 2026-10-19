@@ -64,10 +64,19 @@ public class MaterializerBlockEntity extends BlockEntity
         MATERIALIZE
     }
 
-    // Длительности операций в тиках.
-    public static final int SCAN_TICKS = 100;
-    public static final int DEMATERIALIZE_TICKS = 40;
-    public static final int MATERIALIZE_TICKS = 60;
+    // Длительности операций в тиках по тирам (20 тиков = 1 с):
+    //   I — скан 30 с, сборка 20 с, разбор 10 с;
+    //   II — скан 15 с, сборка 10 с, разбор 5 с;
+    //   III — скан 3 с, сборка 1 с, разбор 1 с.
+    private static final int[] SCAN_TICKS = {600, 300, 60};
+    private static final int[] DEMATERIALIZE_TICKS = {200, 100, 20};
+    private static final int[] MATERIALIZE_TICKS = {400, 200, 20};
+
+    /**
+     * Скорость обмена с сетью по тирам (мк/тик):
+     * I — 100 ед/с, II — 1 000 ед/с, III — 10 000 ед/с.
+     */
+    private static final long[] TRANSFER_RATE_MICRO = {50, 500, 5_000};
 
     // ===== Инвентарь =====
     private final ItemStackHandler inventory = new ItemStackHandler(SLOT_COUNT) {
@@ -137,12 +146,22 @@ public class MaterializerBlockEntity extends BlockEntity
     private long matterMicro = 0L;
 
     /**
-     * Базовый бак = 400 ед. материи.
-     * Материализовать предметы дороже 400 ед. без внешних хранилищ нельзя:
+     * Базовый бак по тирам: I — 400 ед., II — 1 600 ед., III — 15 000 ед.
+     * Материализовать предметы дороже бака без внешних хранилищ нельзя:
      * материи физически негде уместиться. Сканировать можно что угодно —
      * рецепты не ограничены.
      */
-    public static final long BASE_CAPACITY_MICRO = 400L * MatterValues.MICRO_PER_UNIT;
+    private static final long[] BASE_CAPACITY_MICRO = {
+            400L * MatterValues.MICRO_PER_UNIT,
+            1_600L * MatterValues.MICRO_PER_UNIT,
+            15_000L * MatterValues.MICRO_PER_UNIT};
+
+    /** Тир этого блока (1..3) — читается из BlockState. */
+    public int tier() {
+        return (getBlockState().getBlock() instanceof MaterializerBlock b)
+                ? Math.min(3, Math.max(1, b.getTier()))
+                : 1;
+    }
 
     /**
      * «Призрачный» слот: показывает иконку выбранного рецепта в GUI.
@@ -154,7 +173,7 @@ public class MaterializerBlockEntity extends BlockEntity
     // ===== Состояние машины =====
     private Mode mode = Mode.SCAN;
     private int progress = 0;
-    private int maxProgress = SCAN_TICKS;
+    private int maxProgress;
 
     /** Машина работает только когда running=true. Новый блок стоит остановленным. */
     private boolean running = false;
@@ -175,6 +194,7 @@ public class MaterializerBlockEntity extends BlockEntity
 
     public MaterializerBlockEntity(BlockPos pos, BlockState state) {
         super(QuantX.MATERIALIZER_BE.get(), pos, state);
+        this.maxProgress = ticksForMode(mode);
     }
 
     public ItemStackHandler getInventory() {
@@ -228,12 +248,13 @@ public class MaterializerBlockEntity extends BlockEntity
         setChanged();
     }
 
-    /** Длительность операции для режима. */
-    public static int ticksForMode(Mode mode) {
+    /** Длительность операции для режима — зависит от тира блока. */
+    public int ticksForMode(Mode mode) {
+        int t = tier() - 1;
         return switch (mode) {
-            case SCAN -> SCAN_TICKS;
-            case DEMATERIALIZE -> DEMATERIALIZE_TICKS;
-            case MATERIALIZE -> MATERIALIZE_TICKS;
+            case SCAN -> SCAN_TICKS[t];
+            case DEMATERIALIZE -> DEMATERIALIZE_TICKS[t];
+            case MATERIALIZE -> MATERIALIZE_TICKS[t];
         };
     }
 
@@ -515,7 +536,7 @@ public class MaterializerBlockEntity extends BlockEntity
      */
     @Override
     public long getCapacityMicro() {
-        long capacity = BASE_CAPACITY_MICRO;
+        long capacity = BASE_CAPACITY_MICRO[tier() - 1];
         for (MatterStorageProvider s : storages()) {
             capacity += s.getMatterCapacityBonusMicro();
         }
@@ -561,6 +582,12 @@ public class MaterializerBlockEntity extends BlockEntity
     public boolean consumeMatter(long costMicro) {
         if (costMicro <= 0) return true;
         return takeMatter(costMicro) == costMicro;
+    }
+
+    /** Скорость обмена с сетью по тиру: I 100 ед/с, II 1 000, III 10 000. */
+    @Override
+    public long getTransferRateMicro() {
+        return TRANSFER_RATE_MICRO[tier() - 1];
     }
 
     // ===== Сеть материи =====
@@ -713,7 +740,8 @@ public class MaterializerBlockEntity extends BlockEntity
 
     @Override
     public Component getDisplayName() {
-        return Component.translatable("block.quantx.materializer");
+        // Имя берём из блока — у каждого тира свой ключ локализации.
+        return getBlockState().getBlock().getName();
     }
 
     @Nullable

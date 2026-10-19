@@ -6,7 +6,6 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
-import ru.justsmile.quantx.QuantX;
 
 /**
  * Однослотовый контейнер ранца материи, привязанный к игроку.
@@ -22,6 +21,12 @@ public class MatterPackContainer extends SimpleContainer {
 
     /** Индекс слота ранца в {@link InventoryMenu#slots} (сразу после SHIELD_SLOT=45). */
     public static final int SLOT_INDEX = InventoryMenu.SHIELD_SLOT + 1;
+
+    /**
+     * Свёрнута ли клиентская панель ранца. Пишется только на клиенте
+     * (MatterPackSlotRender); на сервере всегда false и ни на что не влияет.
+     */
+    public static boolean packSlotCollapsed = false;
 
     private final Player owner;
 
@@ -67,6 +72,7 @@ public class MatterPackContainer extends SimpleContainer {
     }
 
     public static boolean isWearingPack(Player player) {
-        return getPackStack(player).is(QuantX.MATTER_PACK.get());
+        return getPackStack(player).getItem()
+                instanceof ru.justsmile.quantx.item.MatterPackItem;
     }
 }

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "FFF",
+    "FRF",
+    "FFF"
+  ],
+  "key": {
+    "F": "quantx:granite_frame_3",
+    "R": "minecraft:redstone"
+  },
+  "result": {
+    "id": "quantx:materializer_upgrade_3",
+    "count": 1
+  }
+}

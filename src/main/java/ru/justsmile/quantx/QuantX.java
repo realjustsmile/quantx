@@ -52,6 +52,7 @@ import ru.justsmile.quantx.block.QuantumFiberBlock;
 import ru.justsmile.quantx.block.QuantumFiberBlockEntity;
 import ru.justsmile.quantx.client.QuantXClient;
 import ru.justsmile.quantx.item.GuideBookItem;
+import ru.justsmile.quantx.item.MaterializerUpgradeItem;
 import ru.justsmile.quantx.item.MatterGunItem;
 import ru.justsmile.quantx.item.MatterPackItem;
 import ru.justsmile.quantx.item.PunchCardItem;
@@ -85,14 +86,29 @@ public class QuantX {
 
     public static final RegistryObject<Block> MATERIALIZER = BLOCKS.register("materializer",
             () -> new MaterializerBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.STONE)
-                    .setId(blockKey("materializer"))));
+                    .setId(blockKey("materializer")), 1));
     public static final RegistryObject<Item> MATERIALIZER_ITEM = ITEMS.register("materializer",
             () -> new BlockItem(MATERIALIZER.get(), new Item.Properties().setId(itemKey("materializer"))));
 
+    /** Материализатор II: бак 1 600, скан 15 с, сборка 10 с, разбор 5 с. */
+    public static final RegistryObject<Block> MATERIALIZER_2 = BLOCKS.register("materializer_2",
+            () -> new MaterializerBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .setId(blockKey("materializer_2")), 2));
+    public static final RegistryObject<Item> MATERIALIZER_2_ITEM = ITEMS.register("materializer_2",
+            () -> new BlockItem(MATERIALIZER_2.get(), new Item.Properties().setId(itemKey("materializer_2"))));
+
+    /** Материализатор III: бак 15 000, скан 3 с, сборка 1 с, разбор 1 с. */
+    public static final RegistryObject<Block> MATERIALIZER_3 = BLOCKS.register("materializer_3",
+            () -> new MaterializerBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DIAMOND_BLOCK)
+                    .setId(blockKey("materializer_3")), 3));
+    public static final RegistryObject<Item> MATERIALIZER_3_ITEM = ITEMS.register("materializer_3",
+            () -> new BlockItem(MATERIALIZER_3.get(), new Item.Properties().setId(itemKey("materializer_3"))));
+
+    /** Тип BE общий для всех тиров — апгрейд блока сохраняет данные. */
     public static final RegistryObject<BlockEntityType<MaterializerBlockEntity>> MATERIALIZER_BE =
             BLOCK_ENTITIES.register("materializer",
                     () -> new BlockEntityType<>(MaterializerBlockEntity::new,
-                            Set.of(MATERIALIZER.get())));
+                            Set.of(MATERIALIZER.get(), MATERIALIZER_2.get(), MATERIALIZER_3.get())));
 
     public static final RegistryObject<MenuType<MaterializerMenu>> MATERIALIZER_MENU =
             MENUS.register("materializer",
@@ -101,13 +117,29 @@ public class QuantX {
     /** Хранилище материи — пассивный бак, расширяет ёмкость материализатора. */
     public static final RegistryObject<Block> MATTER_STORAGE = BLOCKS.register("matter_storage",
             () -> new MatterStorageBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
-                    .setId(blockKey("matter_storage"))));
+                    .setId(blockKey("matter_storage")), 1));
     public static final RegistryObject<Item> MATTER_STORAGE_ITEM = ITEMS.register("matter_storage",
             () -> new BlockItem(MATTER_STORAGE.get(), new Item.Properties().setId(itemKey("matter_storage"))));
+
+    /** Хранилище II: 10 000 ед., обмен 1 000 ед/с. */
+    public static final RegistryObject<Block> MATTER_STORAGE_2 = BLOCKS.register("matter_storage_2",
+            () -> new MatterStorageBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .setId(blockKey("matter_storage_2")), 2));
+    public static final RegistryObject<Item> MATTER_STORAGE_2_ITEM = ITEMS.register("matter_storage_2",
+            () -> new BlockItem(MATTER_STORAGE_2.get(), new Item.Properties().setId(itemKey("matter_storage_2"))));
+
+    /** Хранилище III: 100 000 ед., обмен 10 000 ед/с. */
+    public static final RegistryObject<Block> MATTER_STORAGE_3 = BLOCKS.register("matter_storage_3",
+            () -> new MatterStorageBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DIAMOND_BLOCK)
+                    .setId(blockKey("matter_storage_3")), 3));
+    public static final RegistryObject<Item> MATTER_STORAGE_3_ITEM = ITEMS.register("matter_storage_3",
+            () -> new BlockItem(MATTER_STORAGE_3.get(), new Item.Properties().setId(itemKey("matter_storage_3"))));
+
+    /** Тип BE общий для всех тиров хранилищ. */
     public static final RegistryObject<BlockEntityType<MatterStorageBlockEntity>> MATTER_STORAGE_BE =
             BLOCK_ENTITIES.register("matter_storage",
                     () -> new BlockEntityType<>(MatterStorageBlockEntity::new,
-                            Set.of(MATTER_STORAGE.get())));
+                            Set.of(MATTER_STORAGE.get(), MATTER_STORAGE_2.get(), MATTER_STORAGE_3.get())));
 
     /** Квантовое волокно — тонкая трубка передачи материи. */
     public static final RegistryObject<Block> QUANTUM_FIBER = BLOCKS.register("quantum_fiber",
@@ -176,10 +208,38 @@ public class QuantX {
     public static final RegistryObject<Item> GRANITE_FRAME = ITEMS.register("granite_frame",
             () -> new Item(new Item.Properties().setId(itemKey("granite_frame"))));
 
+    /** Гранитная рама II: рама I + 8 золотых слитков → узлы второго тира. */
+    public static final RegistryObject<Item> GRANITE_FRAME_2 = ITEMS.register("granite_frame_2",
+            () -> new Item(new Item.Properties().setId(itemKey("granite_frame_2"))));
+
+    /** Гранитная рама III: рама II + 8 алмазов → узлы третьего тира. */
+    public static final RegistryObject<Item> GRANITE_FRAME_3 = ITEMS.register("granite_frame_3",
+            () -> new Item(new Item.Properties().setId(itemKey("granite_frame_3"))));
+
     /** Ранец материи — носится в своём слоте инвентаря, расширяет бак пушки. */
     public static final RegistryObject<Item> MATTER_PACK = ITEMS.register("matter_pack",
             () -> new MatterPackItem(new Item.Properties()
-                    .setId(itemKey("matter_pack")).stacksTo(1)));
+                    .setId(itemKey("matter_pack")).stacksTo(1), 1));
+
+    /** Ранец II: +400 000 ед. к баку пушки. */
+    public static final RegistryObject<Item> MATTER_PACK_2 = ITEMS.register("matter_pack_2",
+            () -> new MatterPackItem(new Item.Properties()
+                    .setId(itemKey("matter_pack_2")).stacksTo(1), 2));
+
+    /** Ранец III: +4 000 000 ед. к баку пушки. */
+    public static final RegistryObject<Item> MATTER_PACK_3 = ITEMS.register("matter_pack_3",
+            () -> new MatterPackItem(new Item.Properties()
+                    .setId(itemKey("matter_pack_3")).stacksTo(1), 3));
+
+    /** Улучшение материализатора I→II: ПКМ по блоку, заменяет на II тир. */
+    public static final RegistryObject<Item> MATERIALIZER_UPGRADE_2 = ITEMS.register("materializer_upgrade_2",
+            () -> new MaterializerUpgradeItem(new Item.Properties()
+                    .setId(itemKey("materializer_upgrade_2")).stacksTo(16), 2));
+
+    /** Улучшение материализатора II→III: ПКМ по блоку, заменяет на III тир. */
+    public static final RegistryObject<Item> MATERIALIZER_UPGRADE_3 = ITEMS.register("materializer_upgrade_3",
+            () -> new MaterializerUpgradeItem(new Item.Properties()
+                    .setId(itemKey("materializer_upgrade_3")).stacksTo(16), 3));
 
     /** Справочник QuantX — книга с иллюстрированными рецептами мода. */
     public static final RegistryObject<Item> GUIDE_BOOK = ITEMS.register("guide_book",
@@ -196,11 +256,19 @@ public class QuantX {
                     .icon(() -> new ItemStack(MATTER_GUN.get()))
                     .displayItems((params, output) -> {
                         output.accept(MATERIALIZER_ITEM.get());
+                        output.accept(MATERIALIZER_2_ITEM.get());
+                        output.accept(MATERIALIZER_3_ITEM.get());
+                        output.accept(MATERIALIZER_UPGRADE_2.get());
+                        output.accept(MATERIALIZER_UPGRADE_3.get());
                         output.accept(PUNCH_CARD.get());
                         output.accept(MATTER_GUN.get());
                         output.accept(MATTER_PACK.get());
+                        output.accept(MATTER_PACK_2.get());
+                        output.accept(MATTER_PACK_3.get());
                         output.accept(GUIDE_BOOK.get());
                         output.accept(MATTER_STORAGE.get());
+                        output.accept(MATTER_STORAGE_2.get());
+                        output.accept(MATTER_STORAGE_3.get());
                         output.accept(QUANTUM_FIBER.get());
                         output.accept(MATTER_ACCELERATOR.get());
                         output.accept(MATTER_VALVE.get());
@@ -208,6 +276,8 @@ public class QuantX {
                         output.accept(GRANITE_DUST.get());
                         output.accept(GRANITE_PLATE.get());
                         output.accept(GRANITE_FRAME.get());
+                        output.accept(GRANITE_FRAME_2.get());
+                        output.accept(GRANITE_FRAME_3.get());
                     })
                     .build());
 
@@ -294,7 +364,11 @@ public class QuantX {
     public void addCreative(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
             event.accept(MATERIALIZER_ITEM);
+            event.accept(MATERIALIZER_2_ITEM);
+            event.accept(MATERIALIZER_3_ITEM);
             event.accept(MATTER_STORAGE_ITEM);
+            event.accept(MATTER_STORAGE_2_ITEM);
+            event.accept(MATTER_STORAGE_3_ITEM);
         }
         if (event.getTabKey() == CreativeModeTabs.REDSTONE_BLOCKS) {
             event.accept(QUANTUM_FIBER_ITEM);
@@ -306,12 +380,18 @@ public class QuantX {
             event.accept(PUNCH_CARD);
             event.accept(MATTER_GUN);
             event.accept(MATTER_PACK);
+            event.accept(MATTER_PACK_2);
+            event.accept(MATTER_PACK_3);
+            event.accept(MATERIALIZER_UPGRADE_2);
+            event.accept(MATERIALIZER_UPGRADE_3);
             event.accept(GUIDE_BOOK);
         }
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
             event.accept(GRANITE_DUST);
             event.accept(GRANITE_PLATE);
             event.accept(GRANITE_FRAME);
+            event.accept(GRANITE_FRAME_2);
+            event.accept(GRANITE_FRAME_3);
         }
     }
 }

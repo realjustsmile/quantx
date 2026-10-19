@@ -33,11 +33,23 @@ public class MaterializerBlock extends Block implements EntityBlock {
     /** Лицевая сторона — ставится к игроку (как у печки). */
     public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
 
+    /** Тир машины: 1, 2 или 3. Определяет ёмкость и скорости BE. */
+    private final int tier;
+
     public MaterializerBlock(Properties properties) {
+        this(properties, 1);
+    }
+
+    public MaterializerBlock(Properties properties, int tier) {
         super(properties);
+        this.tier = tier;
         registerDefaultState(defaultBlockState()
                 .setValue(ACTIVE, false)
                 .setValue(FACING, Direction.NORTH));
+    }
+
+    public int getTier() {
+        return tier;
     }
 
     @Override

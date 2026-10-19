@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "FTF",
+    "TST",
+    "FTF"
+  ],
+  "key": {
+    "F": "quantx:granite_frame_2",
+    "T": "quantx:granite_frame_3",
+    "S": "quantx:matter_storage_2"
+  },
+  "result": {
+    "id": "quantx:matter_storage_3",
+    "count": 1
+  }
+}
