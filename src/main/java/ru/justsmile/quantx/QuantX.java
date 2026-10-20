@@ -4,30 +4,44 @@ import com.mojang.logging.LogUtils;
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.TypedEntityData;
+import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.item.component.UseEffects;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.common.util.Result;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.level.BlockEvent;
+import net.minecraftforge.event.level.ExplosionEvent;
 import net.minecraftforge.eventbus.api.bus.BusGroup;
 import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -53,10 +67,12 @@ import ru.justsmile.quantx.block.QuantumFiberBlockEntity;
 import ru.justsmile.quantx.client.QuantXClient;
 import ru.justsmile.quantx.item.GuideBookItem;
 import ru.justsmile.quantx.item.MaterializerUpgradeItem;
+import ru.justsmile.quantx.item.MatterGogglesItem;
 import ru.justsmile.quantx.item.MatterGunItem;
 import ru.justsmile.quantx.item.MatterPackItem;
 import ru.justsmile.quantx.item.PunchCardItem;
 import ru.justsmile.quantx.matter.MatterValues;
+import ru.justsmile.quantx.menu.GogglesContainer;
 import ru.justsmile.quantx.menu.MaterializerMenu;
 import ru.justsmile.quantx.menu.MaterializerScreen;
 import ru.justsmile.quantx.trigger.QuantXTriggers;
@@ -231,6 +247,15 @@ public class QuantX {
             () -> new MatterPackItem(new Item.Properties()
                     .setId(itemKey("matter_pack_3")).stacksTo(1), 3));
 
+    /** Очки материалиста — линзы, открывающие взгляду потоки материи. */
+    public static final RegistryObject<Item> MATTER_GOGGLES = ITEMS.register("matter_goggles",
+            () -> new MatterGogglesItem(new Item.Properties()
+                    .setId(itemKey("matter_goggles")).stacksTo(1)
+                    .component(DataComponents.EQUIPPABLE,
+                            Equippable.builder(EquipmentSlot.HEAD)
+                                    .setEquipSound(SoundEvents.ARMOR_EQUIP_GENERIC)
+                                    .build())));
+
     /** Улучшение материализатора I→II: ПКМ по блоку, заменяет на II тир. */
     public static final RegistryObject<Item> MATERIALIZER_UPGRADE_2 = ITEMS.register("materializer_upgrade_2",
             () -> new MaterializerUpgradeItem(new Item.Properties()
@@ -265,6 +290,7 @@ public class QuantX {
                         output.accept(MATTER_PACK.get());
                         output.accept(MATTER_PACK_2.get());
                         output.accept(MATTER_PACK_3.get());
+                        output.accept(MATTER_GOGGLES.get());
                         output.accept(GUIDE_BOOK.get());
                         output.accept(MATTER_STORAGE.get());
                         output.accept(MATTER_STORAGE_2.get());
@@ -325,13 +351,18 @@ public class QuantX {
                 });
     }
 
-    /** Тултип «Стоимость/Выход материи» на каждом предмете. */
+    /** Тултип «Стоимость/Выход материи» на каждом предмете — только в очках. */
     @SubscribeEvent
     private static void addMatterTooltip(ItemTooltipEvent event) {
         // getEntity() == null при стартовом заполнении поиска — индекс будет построен позже.
         if (event.getEntity() != null
                 && event.getEntity().level().recipeAccess() instanceof net.minecraft.world.item.crafting.RecipeManager rm) {
             MatterValues.init(rm);
+        }
+        // Без надетых очков интерфейс выглядит ванильно: чисел материи нет.
+        if (!(event.getEntity() instanceof Player player)
+                || !GogglesContainer.isWearingGoggles(player)) {
+            return;
         }
         Item item = event.getItemStack().getItem();
         long cost = MatterValues.getCostMicro(item);
@@ -346,6 +377,66 @@ public class QuantX {
     @SubscribeEvent
     private static void giveGuideBook(PlayerEvent.PlayerLoggedInEvent event) {
         QuantXGuideBook.giveIfFirstLogin(event);
+    }
+
+    // ===== Защита спецблоков: снимаются только мат-пушкой =====
+
+    /** Блок мода QuantX (любой спецблок: материализатор, хранилище, волокно...). */
+    public static boolean isModBlock(BlockState state) {
+        return BuiltInRegistries.BLOCK.getKey(state.getBlock())
+                .getNamespace().equals(MODID);
+    }
+
+    /** Рукой/инструментом/креативом спецблоки не ломаются вообще. */
+    @SubscribeEvent
+    private void blockModBreak(BlockEvent.BreakEvent event) {
+        if (isModBlock(event.getState())) {
+            event.setResult(Result.DENY);
+        }
+    }
+
+    /** Взрывами тоже не ломаются. */
+    @SubscribeEvent
+    private void blockModExplosion(ExplosionEvent.Detonate event) {
+        event.getAffectedBlocks().removeIf(
+                pos -> isModBlock(event.getLevel().getBlockState(pos)));
+    }
+
+    /**
+     * ЛКМ по спецблоку: удар гасим всегда — ни attack() блока, ни копания,
+     * ни трещин, ни креативного мгновенного слома.
+     * С мат-пушкой в руке одиночный ЛКМ снимает блок целиком: предмет
+     * с данными BlockEntity (материя, рецепты, содержимое) уходит прямо
+     * в инвентарь, без дропа на землю.
+     */
+    @SubscribeEvent
+    private void gunTapModBlock(PlayerInteractEvent.LeftClickBlock event) {
+        if (!isModBlock(event.getLevel().getBlockState(event.getPos()))) return;
+        event.setUseBlock(Result.DENY);
+        event.setUseItem(Result.DENY);
+
+        Player player = event.getEntity();
+        if (!(player.level() instanceof ServerLevel server)
+                || !(event.getItemStack().getItem() instanceof MatterGunItem)) {
+            return;
+        }
+
+        BlockPos pos = event.getPos().immutable();
+        BlockState state = server.getBlockState(pos);
+        ItemStack stack = new ItemStack(state.getBlock());
+        BlockEntity be = server.getBlockEntity(pos);
+        if (be != null) {
+            // saveWithoutMetadata — без координат: данные BE едут в предмет
+            // и восстанавливаются при установке (BlockEntityData component).
+            stack.set(DataComponents.BLOCK_ENTITY_DATA,
+                    TypedEntityData.of(be.getType(),
+                            be.saveWithoutMetadata(server.registryAccess())));
+        }
+        server.levelEvent(2001, pos, Block.getId(state));
+        server.destroyBlock(pos, false, player);
+        if (!player.addItem(stack)) {
+            Block.popResource(server, pos, stack);
+        }
     }
 
     @SubscribeEvent
@@ -382,6 +473,7 @@ public class QuantX {
             event.accept(MATTER_PACK);
             event.accept(MATTER_PACK_2);
             event.accept(MATTER_PACK_3);
+            event.accept(MATTER_GOGGLES);
             event.accept(MATERIALIZER_UPGRADE_2);
             event.accept(MATERIALIZER_UPGRADE_3);
             event.accept(GUIDE_BOOK);

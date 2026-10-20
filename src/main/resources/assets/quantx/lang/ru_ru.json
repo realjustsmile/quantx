@@ -31,7 +31,17 @@
   "gui.quantx.materializer.mode.materialize": "Сборка",
   "gui.quantx.materializer.mode.unknown": "?",
   "gui.quantx.materializer.cost": "Цена: %s",
+  "gui.quantx.materializer.recipes": "Рецепты",
   "gui.quantx.materializer.matter": "Материя: %s / %s",
+  "gui.quantx.materializer.status.idle": "Остановлен",
+  "gui.quantx.materializer.status.running": "Работает",
+  "gui.quantx.materializer.status.no_input": "Нет предмета во входном слоте",
+  "gui.quantx.materializer.status.known_recipe": "Рецепт уже изучен",
+  "gui.quantx.materializer.status.recipe_limit": "Лимит рецептов исчерпан — сканирование невозможно",
+  "gui.quantx.materializer.status.no_recipe": "Рецепт не выбран",
+  "gui.quantx.materializer.status.no_matter": "Не хватает материи",
+  "gui.quantx.materializer.status.tank_full": "Бак материи полон",
+  "gui.quantx.materializer.status.output_full": "Выходной слот переполнен",
 
   "gui.quantx.materializer.tooltip.mode": "Переключить режим работы",
   "gui.quantx.materializer.tooltip.start_stop": "Запустить/остановить работу",
@@ -118,4 +128,8 @@
   "guide.quantx.name.matter_pack_2": "Ранец II",
   "guide.quantx.name.matter_pack_3": "Ранец III",
   "guide.quantx.name.guide_book": "Справочник"
+,
+  "item.quantx.matter_goggles": "Очки материалиста",
+  "item.quantx.matter_goggles.desc": "Открывает взгляду потоки материи. Shift+ПКМ - надеть.",
+  "guide.quantx.name.matter_goggles": "Очки"
 }

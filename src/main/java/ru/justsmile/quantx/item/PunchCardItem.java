@@ -125,8 +125,10 @@ public class PunchCardItem extends Item {
             // (на карте могла остаться устаревшая/багнутая стоимость).
             Item item = BuiltInRegistries.ITEM.getValue(id);
             if (item == Items.AIR) continue;
-            materializer.learnRecipe(id, MatterValues.getCostMicro(item));
-            learned++;
+            // Лимит рецептов материализатора — лишние с карты не переносим.
+            if (materializer.learnRecipe(id, MatterValues.getCostMicro(item))) {
+                learned++;
+            }
         }
 
         level.playSound(null, context.getClickedPos(), SoundEvents.END_PORTAL_FRAME_FILL,

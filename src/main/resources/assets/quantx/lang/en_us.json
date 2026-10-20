@@ -32,7 +32,17 @@
   "gui.quantx.materializer.mode.materialize": "Materialize",
   "gui.quantx.materializer.mode.unknown": "?",
   "gui.quantx.materializer.cost": "Cost: %s",
+  "gui.quantx.materializer.recipes": "Recipes",
   "gui.quantx.materializer.matter": "Matter: %s / %s",
+  "gui.quantx.materializer.status.idle": "Idle",
+  "gui.quantx.materializer.status.running": "Working",
+  "gui.quantx.materializer.status.no_input": "No item in input slot",
+  "gui.quantx.materializer.status.known_recipe": "Recipe already learned",
+  "gui.quantx.materializer.status.recipe_limit": "Recipe limit reached — cannot scan",
+  "gui.quantx.materializer.status.no_recipe": "No recipe selected",
+  "gui.quantx.materializer.status.no_matter": "Not enough matter",
+  "gui.quantx.materializer.status.tank_full": "Matter tank is full",
+  "gui.quantx.materializer.status.output_full": "Output slot is full",
 
   "gui.quantx.materializer.tooltip.mode": "Switch working mode",
   "gui.quantx.materializer.tooltip.start_stop": "Start / stop the machine",
@@ -119,4 +129,8 @@
   "guide.quantx.name.matter_pack_2": "Backpack II",
   "guide.quantx.name.matter_pack_3": "Backpack III",
   "guide.quantx.name.guide_book": "Field Guide"
+,
+  "item.quantx.matter_goggles": "Materialist's Goggles",
+  "item.quantx.matter_goggles.desc": "Opens your eyes to the flow of matter. Shift+Right-click to wear.",
+  "guide.quantx.name.matter_goggles": "Goggles"
 }

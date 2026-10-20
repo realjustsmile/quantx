@@ -17,10 +17,11 @@ import ru.justsmile.quantx.block.MaterializerBlockEntity;
  * Ячейка 8: режим (ordinal). 9: прогресс. 10: макс. прогресс.
  * Ячейка 11: число изученных рецептов. 12: флаг running.
  * Ячейки 13-16: ёмкость бака (4 чанка).
+ * Ячейка 17: статус машины (ordinal Status) — строка состояния над GUI.
  */
 public class MatterContainerData implements ContainerData {
 
-    public static final int SIZE = 17;
+    public static final int SIZE = 18;
 
     // Индексы ячеек.
     public static final int IDX_MATTER = 0;
@@ -31,6 +32,7 @@ public class MatterContainerData implements ContainerData {
     public static final int IDX_KNOWN_COUNT = 11;
     public static final int IDX_RUNNING = 12;
     public static final int IDX_CAPACITY = 13;
+    public static final int IDX_STATUS = 17;
 
     @Nullable
     private final MaterializerBlockEntity be;
@@ -64,6 +66,7 @@ public class MatterContainerData implements ContainerData {
                 case IDX_MAX_PROGRESS -> be.getMaxProgress();
                 case IDX_KNOWN_COUNT -> be.getKnownRecipes().size();
                 case IDX_RUNNING -> be.isRunning() ? 1 : 0;
+                case IDX_STATUS -> be.getStatus().ordinal();
                 default -> 0;
             };
         } else {

@@ -169,6 +169,13 @@ public class MatterGunItem extends Item {
                           int remainingUseDuration) {
         if (level.isClientSide() || !(entity instanceof Player player)) return;
 
+        // Индекс цен мог ещё не построиться (пушка используется раньше
+        // тика материализатора/тултипа) — иначе yield считается по
+        // fallback-цене редкости и блок отдаёт неправильную материю.
+        if (level.getServer() != null) {
+            MatterValues.init(level.getServer().getRecipeManager());
+        }
+
         BlockPos target = raycastPos(player);
         if (target == null) {
             stopDig(player);
@@ -201,17 +208,18 @@ public class MatterGunItem extends Item {
             return;
         }
 
-        // Блок разобран: без дропа, его ценность уходит в бак пушки.
-        level.destroyBlock(target, false);
-        long stored = getMatterMicro(stack);
-        long space = capacityFor(player) - stored;
-        if (space > 0) {
-            long yield = MatterValues.getDematerializeYieldMicro(state.getBlock().asItem());
-            setMatterMicro(stack, stored + Math.min(yield, space));
-        } else {
+        // Блок разбираем ТОЛЬКО если его полный выход влезает в бак —
+        // иначе блок остаётся: урезанной/потерянной материи быть не должно.
+        long yield = MatterValues.getDematerializeYieldMicro(state.getBlock().asItem());
+        long space = capacityFor(player) - getMatterMicro(stack);
+        if (space < yield) {
             player.sendSystemMessage(
                     Component.translatable("item.quantx.matter_gun.full"));
+            stopDig(player);
+            return;
         }
+        level.destroyBlock(target, false);
+        setMatterMicro(stack, getMatterMicro(stack) + yield);
 
         // Не отпускаем кнопку — целимся в следующий блок и продолжаем.
         BlockPos next = raycastPos(player);
@@ -220,8 +228,7 @@ public class MatterGunItem extends Item {
 
     /** Блоки QuantX нельзя разбирать пушкой — в них материя/буферы. */
     private static boolean isQuantXBlock(BlockState state) {
-        return net.minecraft.core.registries.BuiltInRegistries.BLOCK
-                .getKey(state.getBlock()).getNamespace().equals(QuantX.MODID);
+        return QuantX.isModBlock(state);
     }
 
     private static BlockPos raycastPos(Player player) {
@@ -285,8 +292,12 @@ public class MatterGunItem extends Item {
                                 TooltipDisplay display, Consumer<Component> builder,
                                 TooltipFlag flag) {
         builder.accept(Component.translatable("item.quantx.matter_gun.desc"));
-        builder.accept(Component.translatable("item.quantx.matter_gun.matter",
-                MatterValues.formatMicro(getMatterMicro(stack)),
-                MatterValues.formatMicro(capacityFor(MatterGunHud.clientPlayer()))));
+        // Запас материи в тултипе — только при надетых очках материалиста.
+        if (ru.justsmile.quantx.menu.GogglesContainer.isWearingGoggles(
+                MatterGunHud.clientPlayer())) {
+            builder.accept(Component.translatable("item.quantx.matter_gun.matter",
+                    MatterValues.formatMicro(getMatterMicro(stack)),
+                    MatterValues.formatMicro(capacityFor(MatterGunHud.clientPlayer()))));
+        }
     }
 }

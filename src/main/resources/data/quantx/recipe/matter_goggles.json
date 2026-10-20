@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "LLL",
+    "GPG"
+  ],
+  "key": {
+    "L": "minecraft:leather",
+    "G": "minecraft:glass",
+    "P": "quantx:granite_plate"
+  },
+  "result": {
+    "id": "quantx:matter_goggles",
+    "count": 1
+  }
+}

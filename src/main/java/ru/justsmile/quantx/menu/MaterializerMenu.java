@@ -1,5 +1,6 @@
 package ru.justsmile.quantx.menu;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -19,9 +20,17 @@ public class MaterializerMenu extends AbstractContainerMenu {
     private final MaterializerBlockEntity blockEntity;
     private final MatterContainerData matterData;
 
+    /** Позиция блока на клиенте — экран по ней находит BE с рецептами. */
+    @Nullable
+    private BlockPos blockPos = null;
+
     // ===== Клиентский конструктор =====
     public MaterializerMenu(int windowId, Inventory playerInv, FriendlyByteBuf buf) {
         this(windowId, playerInv, (MaterializerBlockEntity) null);
+        // additionalData приходит чистым payload'ом — BlockPos читается напрямую.
+        if (buf != null && buf.isReadable()) {
+            this.blockPos = buf.readBlockPos();
+        }
     }
 
     // ===== Серверный конструктор =====
@@ -88,6 +97,12 @@ public class MaterializerMenu extends AbstractContainerMenu {
         return blockEntity;
     }
 
+    /** Позиция материализатора (клиент) — записана при открытии меню. */
+    @Nullable
+    public BlockPos getBlockPos() {
+        return blockPos;
+    }
+
     // ===== Данные для Screen (через matterData — работает и на клиенте) =====
 
     public int getModeOrdinal() {
@@ -129,6 +144,11 @@ public class MaterializerMenu extends AbstractContainerMenu {
         return matterData.get(MatterContainerData.IDX_RUNNING) != 0;
     }
 
+    /** Статус машины (ordinal MaterializerBlockEntity.Status) — строка состояния. */
+    public int getStatusOrdinal() {
+        return matterData.get(MatterContainerData.IDX_STATUS);
+    }
+
     /** Иконка выбранного рецепта из призрачного слота (индекс 2). */
     public ItemStack getRecipeIcon() {
         return slots.get(2).getItem();
@@ -138,9 +158,10 @@ public class MaterializerMenu extends AbstractContainerMenu {
 
     // Идентификаторы кнопок — константы, чтобы Screen и Menu их разделяли.
     public static final int BTN_CYCLE_MODE = 0;
-    public static final int BTN_NEXT_RECIPE = 1;
-    public static final int BTN_PREV_RECIPE = 2;
     public static final int BTN_START_STOP = 3; // запуск/остановка машины
+
+    /** Клик по рецепту во вкладке: база + индекс в отсортированном списке. */
+    public static final int BTN_SELECT_RECIPE_BASE = 100;
 
     /**
      * Вызывается на сервере, когда клиент нажимает кнопку контейнера.
@@ -151,10 +172,14 @@ public class MaterializerMenu extends AbstractContainerMenu {
         if (blockEntity == null) return false;
         switch (buttonId) {
             case BTN_CYCLE_MODE -> blockEntity.cycleMode();
-            case BTN_NEXT_RECIPE -> blockEntity.cycleRecipe(1);
-            case BTN_PREV_RECIPE -> blockEntity.cycleRecipe(-1);
             case BTN_START_STOP -> blockEntity.toggleRunning();
-            default -> { return false; }
+            default -> {
+                if (buttonId >= BTN_SELECT_RECIPE_BASE) {
+                    blockEntity.selectRecipeByIndex(buttonId - BTN_SELECT_RECIPE_BASE);
+                    return true;
+                }
+                return false;
+            }
         }
         return true;
     }

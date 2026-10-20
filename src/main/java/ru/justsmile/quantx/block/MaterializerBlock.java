@@ -20,6 +20,7 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 import ru.justsmile.quantx.QuantX;
@@ -113,6 +114,21 @@ public class MaterializerBlock extends Block implements EntityBlock {
     }
 
     /**
+     * Питание редстоуном: пока на блок подаётся сигнал, материализатор
+     * работает всегда — как если бы была нажата кнопка «Старт».
+     */
+    @Override
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos,
+                                   Block block, @Nullable Orientation orientation,
+                                   boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, block, orientation, movedByPiston);
+        if (level.isClientSide()) return;
+        if (level.getBlockEntity(pos) instanceof MaterializerBlockEntity be) {
+            be.setPowered(level.hasNeighborSignal(pos));
+        }
+    }
+
+    /**
      * Тикер: вызывает MaterializerBlockEntity.tick(...) каждый игровой тик.
      * Возвращаем тикер только для нашего типа BlockEntity.
      */
@@ -135,8 +151,13 @@ public class MaterializerBlock extends Block implements EntityBlock {
         if (be instanceof MaterializerBlockEntity materializer) {
             // Запоминаем игрока — ачивки по триггерам уходят ему.
             materializer.setLastUser(player.getUUID());
-            // В 26.3 openMenu принимает только один аргумент.
-            player.openMenu(materializer);
+            // Позиция блока уезжает в клиентское меню — экран читает
+            // список изученных рецептов из синхронизированного BE.
+            if (player instanceof net.minecraftforge.common.extensions.IForgeServerPlayer fsp) {
+                fsp.openMenu(materializer, pos);
+            } else {
+                player.openMenu(materializer);
+            }
         }
         return InteractionResult.SUCCESS;
     }

@@ -95,7 +95,8 @@ public class MatterAcceleratorBlock extends Block implements EntityBlock {
     /** Соединяемся с узлом сети или баком материи. */
     private static boolean connectsTo(BlockGetter level, BlockPos pos) {
         BlockEntity be = level.getBlockEntity(pos);
-        return be instanceof MatterConduit || be instanceof MatterTank;
+        return be instanceof MatterConduit || be instanceof MatterTank
+                || be instanceof MatterStorageProvider;
     }
 
     private static BooleanProperty connProp(Direction dir) {

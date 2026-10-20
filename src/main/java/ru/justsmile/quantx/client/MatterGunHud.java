@@ -11,6 +11,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import ru.justsmile.quantx.item.MatterGunItem;
 import ru.justsmile.quantx.matter.MatterValues;
+import ru.justsmile.quantx.menu.GogglesContainer;
 
 /**
  * HUD-индикатор материи в материальной пушке.
@@ -25,6 +26,9 @@ public final class MatterGunHud {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
         if (player == null) return;
+
+        // Показ материи только через очки материалиста — без них ваниль.
+        if (!GogglesContainer.isWearingGoggles(player)) return;
 
         ItemStack stack = findGun(player);
         if (stack == null) return;

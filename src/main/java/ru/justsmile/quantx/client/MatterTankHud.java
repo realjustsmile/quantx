@@ -11,6 +11,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import ru.justsmile.quantx.block.MatterTank;
 import ru.justsmile.quantx.matter.MatterValues;
+import ru.justsmile.quantx.menu.GogglesContainer;
 
 /**
  * HUD при наведении на бак материи (материализатор, хранилище):
@@ -28,6 +29,9 @@ public final class MatterTankHud {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
         if (player == null || player.isSpectator()) return;
+
+        // Без очков уровень баков не виден — HUD ванилен.
+        if (!GogglesContainer.isWearingGoggles(player)) return;
 
         HitResult hit = player.pick(REACH, 1.0f, false);
         if (!(hit instanceof BlockHitResult bhr)) return;

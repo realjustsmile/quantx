@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -62,6 +63,35 @@ public class MaterializerBlockEntity extends BlockEntity
         DEMATERIALIZE,
         /** Сборка изученного предмета из материи. */
         MATERIALIZE
+    }
+
+    /** Лимит изученных рецептов — список модуля скроллится, вмещает 1024. */
+    public static final int MAX_RECIPES = 1024;
+
+    /**
+     * Статус машины для строки состояния над GUI.
+     * Обновляется каждый тик; причину остановки показываем,
+     * пока пользователь не запустит машину снова.
+     */
+    public enum Status {
+        /** Остановлена. */
+        IDLE,
+        /** Работает без проблем. */
+        RUNNING,
+        /** Во входном слоте нет предмета. */
+        NO_INPUT,
+        /** Сканируемый предмет уже изучен. */
+        KNOWN_RECIPE,
+        /** Лимит изученных рецептов исчерпан — сканировать новое нельзя. */
+        RECIPE_LIMIT,
+        /** Рецепт не выбран (сборка). */
+        NO_RECIPE,
+        /** Не хватает материи на сборку. */
+        NO_MATTER,
+        /** Бак полон — разбор некуда складывать. */
+        TANK_FULL,
+        /** Выходной слот не принимает результат. */
+        OUTPUT_FULL
     }
 
     // Длительности операций в тиках по тирам (20 тиков = 1 с):
@@ -179,14 +209,24 @@ public class MaterializerBlockEntity extends BlockEntity
     private boolean running = false;
 
     /**
+     * Внешний сигнал редстоуна: пока блок запитан — машина работает
+     * всегда, независимо от кнопки «Старт/Стоп».
+     */
+    private boolean powered = false;
+
+    /** Текущий статус для строки состояния (синкается в меню). */
+    private Status status = Status.IDLE;
+
+    /**
      * Последний взаимодействовавший игрок — для ачивок.
      * Не сохраняется: сессионное значение, достаточное для триггеров.
      */
     @Nullable
     private UUID lastUser = null;
 
-    /** Изученные рецепты: идентификатор предмета -> стоимость в микро-серых. */
-    private final Map<Identifier, Long> knownRecipes = new HashMap<>();
+    /** Изученные рецепты: идентификатор предмета -> стоимость в микро-серых.
+     *  LinkedHashMap — порядок итерации = порядок изучения. */
+    private final Map<Identifier, Long> knownRecipes = new LinkedHashMap<>();
 
     /** Выбранный рецепт для сборки (null — ничего не выбрано). */
     @Nullable
@@ -258,13 +298,36 @@ public class MaterializerBlockEntity extends BlockEntity
         };
     }
 
+    /** Эффективная работа: вручную (кнопка) или по сигналу редстоуна. */
     public boolean isRunning() {
-        return running;
+        return running || powered;
+    }
+
+    /** Сосед сообщил об изменении сигнала редстоуна. */
+    public void setPowered(boolean powered) {
+        if (this.powered == powered) return;
+        this.powered = powered;
+        if (!powered) {
+            // Сигнал пропал — полный стоп: гасим и ручной запуск,
+            // сбрасываем прогресс, статус возвращается в «остыв».
+            running = false;
+            progress = 0;
+            status = Status.IDLE;
+        }
+        setChanged();
+        syncToClient();
+    }
+
+    /** Текущий статус машины (для строки состояния). */
+    public Status getStatus() {
+        return status;
     }
 
     /** Переключить работу (Старт/Стоп из GUI). При остановке прогресс сбрасывается. */
     public void toggleRunning() {
         running = !running;
+        // Запуск сбрасывает застрявшую причину остановки — тик подтвердит её снова, если нужно.
+        status = running ? Status.RUNNING : Status.IDLE;
         if (!running) {
             progress = 0;
         }
@@ -302,14 +365,25 @@ public class MaterializerBlockEntity extends BlockEntity
 
     // ===== Изученные рецепты =====
 
-    /** Запомнить предмет и его стоимость (в микро-серых). */
-    public void learnRecipe(Identifier itemId, long costMicro) {
+    /**
+     * Запомнить предмет и его стоимость (в микро-серых).
+     * Возвращает false, если рецепт не записан: уже известен
+     * или лимит {@link #MAX_RECIPES} исчерпан (перфокарта считает по нему).
+     */
+    public boolean learnRecipe(Identifier itemId, long costMicro) {
+        if (!knownRecipes.containsKey(itemId) && knownRecipes.size() >= MAX_RECIPES) {
+            return false;
+        }
+        boolean fresh = !knownRecipes.containsKey(itemId);
         knownRecipes.put(itemId, costMicro);
         // Первый изученный рецепт сразу выбираем — призрачный слот покажет предмет.
         if (selectedRecipe == null) {
             setSelectedRecipe(itemId);
         }
         setChanged();
+        // Список рецептов едет в NBT BE — клиенту нужен для модуля рецептов.
+        syncToClient();
+        return fresh;
     }
 
     public boolean isRecipeKnown(Identifier itemId) {
@@ -336,10 +410,23 @@ public class MaterializerBlockEntity extends BlockEntity
         this.running = false;
         updateDisplaySlot();
         setChanged();
+        syncToClient();
+    }
+
+    /** Изученные рецепты в порядке изучения — общий порядок сервер/клиент. */
+    public List<Identifier> orderedRecipeIds() {
+        return new ArrayList<>(knownRecipes.keySet());
+    }
+
+    /** Выбрать рецепт по индексу в {@link #orderedRecipeIds()} — клик из модуля GUI. */
+    public void selectRecipeByIndex(int index) {
+        List<Identifier> ids = orderedRecipeIds();
+        if (index < 0 || index >= ids.size()) return;
+        setSelectedRecipe(ids.get(index));
     }
 
     /**
-     * Листает выбранный рецепт по списку изученных (в алфавитном порядке id).
+     * Листает выбранный рецепт по списку изученных (порядок изучения).
      * direction: +1 — следующий, -1 — предыдущий. По кругу.
      */
     public void cycleRecipe(int direction) {
@@ -347,8 +434,7 @@ public class MaterializerBlockEntity extends BlockEntity
             setSelectedRecipe(null);
             return;
         }
-        List<Identifier> ids = new ArrayList<>(knownRecipes.keySet());
-        ids.sort(Identifier::compareTo);
+        List<Identifier> ids = orderedRecipeIds();
         int index = (selectedRecipe == null) ? -1 : ids.indexOf(selectedRecipe);
         int next = Math.floorMod(index + direction, ids.size());
         setSelectedRecipe(ids.get(next));
@@ -371,8 +457,14 @@ public class MaterializerBlockEntity extends BlockEntity
      * (пустой вход, нет рецепта/материи, выход не принимает).
      */
     private void stop() {
+        stop(Status.IDLE);
+    }
+
+    /** Остановиться с причиной — её увидит игрок в строке состояния. */
+    private void stop(Status reason) {
         running = false;
         progress = 0;
+        status = reason;
         setChanged();
     }
 
@@ -390,10 +482,20 @@ public class MaterializerBlockEntity extends BlockEntity
             MatterValues.init(level.getServer().getRecipeManager());
         }
         // Синк «работает» в BlockState — клиент по нему спавнит частицы.
-        if (state.getValue(MaterializerBlock.ACTIVE) != be.running) {
-            level.setBlock(pos, state.setValue(MaterializerBlock.ACTIVE, be.running), 3);
+        if (state.getValue(MaterializerBlock.ACTIVE) != be.isRunning()) {
+            level.setBlock(pos, state.setValue(MaterializerBlock.ACTIVE, be.isRunning()), 3);
         }
-        if (!be.running) return;
+        // Ёмкость упала (отключили хранилище) — излишек материи теряется,
+        // остаётся максимально допустимое количество.
+        long capacity = be.getCapacityMicro();
+        if (be.matterMicro > capacity) {
+            be.matterMicro = capacity;
+            be.setChanged();
+            be.syncToClient();
+        }
+        if (!be.isRunning()) return;
+        // Машина работает — статус по умолчанию «работает», блокеры переопределят.
+        be.status = Status.RUNNING;
         switch (be.mode) {
             case SCAN -> be.tickScan(level, pos, state);
             case DEMATERIALIZE -> be.tickDematerialize(level, pos, state);
@@ -409,14 +511,19 @@ public class MaterializerBlockEntity extends BlockEntity
     private void tickScan(Level level, BlockPos pos, BlockState state) {
         ItemStack input = inventory.getStackInSlot(SLOT_INPUT);
         if (input.isEmpty()) {
-            stop();
+            stop(Status.NO_INPUT);
             return;
         }
 
         Identifier itemId = BuiltInRegistries.ITEM.getKey(input.getItem());
         if (isRecipeKnown(itemId)) {
             // Уже изучен — повторно не уничтожаем. Стоп, пока не заберут.
-            stop();
+            stop(Status.KNOWN_RECIPE);
+            return;
+        }
+        if (knownRecipes.size() >= MAX_RECIPES) {
+            // Сетка рецептов заполнена — сканировать новое некуда.
+            stop(Status.RECIPE_LIMIT);
             return;
         }
 
@@ -439,12 +546,12 @@ public class MaterializerBlockEntity extends BlockEntity
     private void tickDematerialize(Level level, BlockPos pos, BlockState state) {
         ItemStack input = inventory.getStackInSlot(SLOT_INPUT);
         if (input.isEmpty()) {
-            stop();
+            stop(Status.NO_INPUT);
             return;
         }
         if (getMatterMicro() >= getCapacityMicro()) {
             // Бак и сеть полны — не тратим предмет впустую.
-            stop();
+            stop(Status.TANK_FULL);
             return;
         }
 
@@ -470,20 +577,20 @@ public class MaterializerBlockEntity extends BlockEntity
      */
     private void tickMaterialize(Level level, BlockPos pos, BlockState state) {
         if (selectedRecipe == null || !isRecipeKnown(selectedRecipe)) {
-            stop();
+            stop(Status.NO_RECIPE);
             return;
         }
 
         Item item = BuiltInRegistries.ITEM.getValue(selectedRecipe);
         if (item == null) {
-            stop();
+            stop(Status.NO_RECIPE);
             return;
         }
 
         long cost = getSelectedCostMicro();
         if (getMatterMicro() < cost) {
             // Не хватает материи — останавливаемся.
-            stop();
+            stop(Status.NO_MATTER);
             return;
         }
 
@@ -497,7 +604,7 @@ public class MaterializerBlockEntity extends BlockEntity
                         && out.getCount() + result.getCount() <= out.getMaxStackSize() * 16);
         if (!fits) {
             // Выход не принимает предмет — останавливаемся.
-            stop();
+            stop(Status.OUTPUT_FULL);
             return;
         }
 
@@ -532,13 +639,14 @@ public class MaterializerBlockEntity extends BlockEntity
     /**
      * Полная ёмкость: базовый бак + бонусы хранилищ
      * ({@link MatterStorageProvider}), достижимых по сети
-     * квантовых волокон и хабов.
+     * квантовых волокон и хабов. Хранилище, подключённое к
+     * нескольким материализаторам, делит добавку поровну.
      */
     @Override
     public long getCapacityMicro() {
         long capacity = BASE_CAPACITY_MICRO[tier() - 1];
-        for (MatterStorageProvider s : storages()) {
-            capacity += s.getMatterCapacityBonusMicro();
+        for (StorageShare s : storages()) {
+            capacity += s.storage().getMatterCapacityBonusMicro() / s.consumers();
         }
         return capacity;
     }
@@ -592,9 +700,12 @@ public class MaterializerBlockEntity extends BlockEntity
 
     // ===== Сеть материи =====
 
+    /** Хранилище сети и число материализаторов, делящих его добавку. */
+    private record StorageShare(MatterStorageProvider storage, int consumers) {}
+
     /** Найденные хранилища и момент последнего сканирования (кэш ~0.5 c). */
     @Nullable
-    private List<MatterStorageProvider> networkStorages = null;
+    private List<StorageShare> networkStorages = null;
     private long networkCacheTick = Long.MIN_VALUE;
 
     /** Максимум узлов при обходе сети — защита от гигантских петель. */
@@ -604,14 +715,16 @@ public class MaterializerBlockEntity extends BlockEntity
      * BFS по соседям: собирает все {@link MatterStorageProvider},
      * достижимые напрямую и через {@link MatterConduit} (волокна, хабы).
      * За хранилищем сеть не продолжается — это сток, а не транзит.
+     * Для каждого хранилища считаем, сколько материализаторов его
+     * делят ({@link MatterNetwork#countConsumers}).
      * Результат кэшируется на 10 тиков.
      */
-    private List<MatterStorageProvider> storages() {
+    private List<StorageShare> storages() {
         long gameTime = level != null ? level.getGameTime() : 0L;
         if (networkStorages != null && gameTime - networkCacheTick < 10L) {
             return networkStorages;
         }
-        List<MatterStorageProvider> found = new ArrayList<>();
+        List<StorageShare> found = new ArrayList<>();
         if (level != null) {
             Set<BlockPos> visited = new HashSet<>();
             ArrayDeque<BlockPos> queue = new ArrayDeque<>();
@@ -624,7 +737,8 @@ public class MaterializerBlockEntity extends BlockEntity
                 if (!visited.add(p)) continue;
                 BlockEntity be = level.getBlockEntity(p);
                 if (be instanceof MatterStorageProvider storage) {
-                    found.add(storage);
+                    int consumers = MatterNetwork.countConsumers(level, p);
+                    found.add(new StorageShare(storage, consumers));
                 } else if (be instanceof MatterConduit) {
                     for (Direction dir : Direction.values()) {
                         BlockPos next = p.relative(dir);
@@ -670,6 +784,7 @@ public class MaterializerBlockEntity extends BlockEntity
         output.putInt("Progress", progress);
         output.putInt("MaxProgress", maxProgress);
         output.putBoolean("Running", running);
+        output.putBoolean("Powered", powered);
 
         // Изученные рецепты: ключ — строка вида "minecraft:iron_ingot", значение — long.
         CompoundTag recipesTag = new CompoundTag();
@@ -677,6 +792,10 @@ public class MaterializerBlockEntity extends BlockEntity
             recipesTag.putLong(entry.getKey().toString(), entry.getValue());
         }
         output.store("KnownRecipes", CompoundTag.CODEC, recipesTag);
+
+        // Порядок изучения: CompoundTag не упорядочен — пишем список отдельно.
+        output.store("RecipeOrder", Codec.STRING.listOf(),
+                knownRecipes.keySet().stream().map(Identifier::toString).toList());
 
         if (selectedRecipe != null) {
             output.store("SelectedRecipe", Codec.STRING, selectedRecipe.toString());
@@ -714,15 +833,27 @@ public class MaterializerBlockEntity extends BlockEntity
         progress = input.getIntOr("Progress", 0);
         maxProgress = input.getIntOr("MaxProgress", ticksForMode(mode));
         running = input.getBooleanOr("Running", false);
+        powered = input.getBooleanOr("Powered", false);
 
         knownRecipes.clear();
+        Map<Identifier, Long> costs = new HashMap<>();
         input.read("KnownRecipes", CompoundTag.CODEC).ifPresent(recipesTag -> {
             for (String key : recipesTag.keySet()) {
                 Identifier id = Identifier.tryParse(key);
                 if (id == null) continue;
-                recipesTag.getLong(key).ifPresent(cost -> knownRecipes.put(id, cost));
+                recipesTag.getLong(key).ifPresent(cost -> costs.put(id, cost));
             }
         });
+        // Восстанавливаем в порядке изучения; рецепты без записи
+        // в RecipeOrder (старые сейвы) — в конец списка.
+        input.read("RecipeOrder", Codec.STRING.listOf()).ifPresent(order -> {
+            for (String key : order) {
+                Identifier id = Identifier.tryParse(key);
+                Long cost = (id != null) ? costs.remove(id) : null;
+                if (cost != null) knownRecipes.put(id, cost);
+            }
+        });
+        knownRecipes.putAll(costs);
 
         selectedRecipe = input.read("SelectedRecipe", Codec.STRING)
                 .map(Identifier::tryParse)

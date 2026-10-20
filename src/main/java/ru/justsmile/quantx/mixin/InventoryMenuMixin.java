@@ -15,19 +15,23 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ru.justsmile.quantx.QuantX;
+import ru.justsmile.quantx.menu.GogglesContainer;
 import ru.justsmile.quantx.menu.MatterPackContainer;
 
 /**
- * Добавляет слот ранца материи в ванильное меню инвентаря —
- * слева от слота нагрудника (броня на x=8, нагрудник y=26 → x=-10, y=26).
+ * Добавляет слоты снаряжения мода в ванильное меню инвентаря —
+ * панель слева от рамки: очки сверху (-29, 4), ранец под ними
+ * (-29, 25). Верх панели на одном уровне с верхом интерфейса.
  * Работает на обеих сторонах: ванильная синхронизация слотов
  * сама передаёт содержимое на клиент.
  */
 @Mixin(InventoryMenu.class)
 public abstract class InventoryMenuMixin extends AbstractContainerMenu {
 
-    private static final Identifier EMPTY_ICON =
+    private static final Identifier EMPTY_PACK_ICON =
             Identifier.fromNamespaceAndPath(QuantX.MODID, "container/slot/matter_pack");
+    private static final Identifier EMPTY_GOGGLES_ICON =
+            Identifier.fromNamespaceAndPath(QuantX.MODID, "container/slot/matter_goggles");
 
     protected InventoryMenuMixin(@Nullable MenuType<?> menuType, int containerId) {
         super(menuType, containerId);
@@ -36,7 +40,7 @@ public abstract class InventoryMenuMixin extends AbstractContainerMenu {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void quantx$addMatterPackSlot(Inventory inventory, boolean active,
                                           Player owner, CallbackInfo ci) {
-        this.addSlot(new Slot(new MatterPackContainer(owner), 0, -29, 19) {
+        this.addSlot(new Slot(new MatterPackContainer(owner), 0, -29, 25) {
             @Override
             public boolean mayPlace(ItemStack stack) {
                 return stack.getItem()
@@ -59,32 +63,62 @@ public abstract class InventoryMenuMixin extends AbstractContainerMenu {
 
             @Override
             public Identifier getNoItemIcon() {
-                return EMPTY_ICON;
+                return EMPTY_PACK_ICON;
+            }
+        });
+        this.addSlot(new Slot(new GogglesContainer(owner), 0, -29, 4) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return stack.getItem()
+                        instanceof ru.justsmile.quantx.item.MatterGogglesItem;
+            }
+
+            @Override
+            public boolean isActive() {
+                return !MatterPackContainer.packSlotCollapsed;
+            }
+
+            @Override
+            public int getMaxStackSize() {
+                return 1;
+            }
+
+            @Override
+            public Identifier getNoItemIcon() {
+                return EMPTY_GOGGLES_ICON;
             }
         });
     }
 
     /**
-     * Shift-клик по ранцу в инвентаре — автоматически надевает его в слот
-     * ранца, как ванильная броня. Слот из быстрого перемещения ранца
-     * обрабатывает ванильная ветка (index 46 попадает в общий диапазон).
+     * Shift-клик по ранцу/очкам в инвентаре — автоматически надевает
+     * предмет в свой слот, как ванильная броня. Клики по самим слотам
+     * вкладки обрабатывает ванильная ветка (индексы попадают в общий
+     * диапазон).
      */
     @Inject(method = "quickMoveStack", at = @At("HEAD"), cancellable = true)
     private void quantx$packShiftClick(Player player, int index,
                                        CallbackInfoReturnable<ItemStack> cir) {
         if (index == MatterPackContainer.SLOT_INDEX
+                || index == GogglesContainer.SLOT_INDEX
                 || index < 0 || index >= this.slots.size()
-                || this.slots.size() <= MatterPackContainer.SLOT_INDEX) {
+                || this.slots.size() <= GogglesContainer.SLOT_INDEX) {
             return;
         }
         ItemStack stack = this.slots.get(index).getItem();
-        Slot packSlot = this.slots.get(MatterPackContainer.SLOT_INDEX);
-        if (!stack.isEmpty()
-                && stack.getItem()
+        if (stack.isEmpty()) return;
+
+        if (stack.getItem()
                     instanceof ru.justsmile.quantx.item.MatterPackItem
-                && !packSlot.hasItem()
+                && !this.slots.get(MatterPackContainer.SLOT_INDEX).hasItem()
                 && this.moveItemStackTo(stack, MatterPackContainer.SLOT_INDEX,
                         MatterPackContainer.SLOT_INDEX + 1, false)) {
+            cir.setReturnValue(ItemStack.EMPTY);
+        } else if (stack.getItem()
+                    instanceof ru.justsmile.quantx.item.MatterGogglesItem
+                && !this.slots.get(GogglesContainer.SLOT_INDEX).hasItem()
+                && this.moveItemStackTo(stack, GogglesContainer.SLOT_INDEX,
+                        GogglesContainer.SLOT_INDEX + 1, false)) {
             cir.setReturnValue(ItemStack.EMPTY);
         }
     }

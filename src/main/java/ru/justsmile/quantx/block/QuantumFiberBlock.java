@@ -90,10 +90,11 @@ public class QuantumFiberBlock extends Block implements EntityBlock {
         return state.setValue(connProp(dir), connectsTo(level, neighborPos));
     }
 
-    /** Соединяемся с узлом сети или баком материи. */
+    /** Соединяемся с узлом сети, баком материи или хранилищем. */
     private static boolean connectsTo(BlockGetter level, BlockPos pos) {
         BlockEntity be = level.getBlockEntity(pos);
-        return be instanceof MatterConduit || be instanceof MatterTank;
+        return be instanceof MatterConduit || be instanceof MatterTank
+                || be instanceof MatterStorageProvider;
     }
 
     private static BooleanProperty connProp(Direction dir) {
