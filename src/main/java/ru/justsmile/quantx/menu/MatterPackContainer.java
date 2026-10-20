@@ -30,13 +30,49 @@ public class MatterPackContainer extends SimpleContainer {
 
     private final Player owner;
 
+    /**
+     * Содержимое ещё не читалось из NBT. InventoryMenu создаётся в
+     * конструкторе Player — раньше, чем persistentData заполняется из
+     * сохранения, поэтому читаем лениво при первом обращении.
+     */
+    private boolean loaded;
+
     public MatterPackContainer(Player owner) {
         super(1);
         this.owner = owner;
+    }
+
+    private void ensureLoaded() {
+        if (loaded) return;
+        loaded = true;
         ItemStack saved = read(owner);
         if (!saved.isEmpty()) {
-            setItem(0, saved);
+            super.setItem(0, saved);
         }
+    }
+
+    @Override
+    public ItemStack getItem(int slot) {
+        ensureLoaded();
+        return super.getItem(slot);
+    }
+
+    @Override
+    public void setItem(int slot, ItemStack stack) {
+        ensureLoaded();
+        super.setItem(slot, stack);
+    }
+
+    @Override
+    public ItemStack removeItem(int slot, int amount) {
+        ensureLoaded();
+        return super.removeItem(slot, amount);
+    }
+
+    @Override
+    public boolean isEmpty() {
+        ensureLoaded();
+        return super.isEmpty();
     }
 
     @Override

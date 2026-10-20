@@ -132,4 +132,23 @@
   "item.quantx.matter_goggles": "Очки материалиста",
   "item.quantx.matter_goggles.desc": "Открывает взгляду потоки материи. Shift+ПКМ - надеть.",
   "guide.quantx.name.matter_goggles": "Очки"
+,
+  "guide.quantx.desc.book": "Этот справочник. Крафтится из книги и гранитной пыли — на случай потери.",
+  "guide.quantx.desc.goggles": "Наденьте — и увидите цены предметов, заряд пушки и уровень баков в мире.",
+  "guide.quantx.desc.gun": "Зажмите ПКМ по блоку — он разложится в материю. Shift+ПКМ по материализатору — перелить запас.",
+  "guide.quantx.desc.materializers": "Собирают предметы из материи по перфокартам. Тир выше — больше бак и быстрее сборка.",
+  "guide.quantx.desc.network": "Волокно переносит материю между блоками. Ускоритель гонит её вперёд, клапан и счётчик управляют потоком.",
+  "guide.quantx.desc.packs": "Носится в слоте вкладки слева от брони — расширяет бак мат-пушки.",
+  "guide.quantx.desc.resources": "Пыль, пластины и рамы из гранита — база всех машин QuantX. Пыль выпадает из гранита.",
+  "guide.quantx.desc.storages": "Баки для хранения материи. Чем выше тир — тем больше вместимость.",
+  "guide.quantx.group.book": "Справочник",
+  "guide.quantx.group.goggles": "Очки материалиста",
+  "guide.quantx.group.gun": "Мат-пушка",
+  "guide.quantx.group.materializers": "Материализаторы",
+  "guide.quantx.group.network": "Сеть материи",
+  "guide.quantx.group.packs": "Мат-ранцы",
+  "guide.quantx.group.resources": "Материалы",
+  "guide.quantx.group.storages": "Хранилища",
+  "guide.quantx.toc": "Содержание",
+  "guide.quantx.toc.hint": "Клик по строке — переход к группе"
 }

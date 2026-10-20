@@ -30,6 +30,28 @@ public final class MatterGunHud {
         // Показ материи только через очки материалиста — без них ваниль.
         if (!GogglesContainer.isWearingGoggles(player)) return;
 
+        int w = mc.getWindow().getGuiScaledWidth();
+        int h = mc.getWindow().getGuiScaledHeight();
+
+        // Стоимость блока под прицелом — при надетых очках, с любым
+        // предметом в руках и даже без него. Полупрозрачный белый текст
+        // с тенью, справа-снизу от курсора.
+        if (player.pick(4.5, 1.0f, false) instanceof BlockHitResult bhr) {
+            BlockPos target = bhr.getBlockPos();
+            BlockState state = player.level().getBlockState(target);
+            if (!state.isAir() && state.getDestroySpeed(player.level(), target) >= 0) {
+                long cost = MatterValues.getCostMicro(state.getBlock().asItem());
+                Component label = Component.translatable("tooltip.quantx.matter_yield",
+                        MatterValues.formatMicro(cost));
+
+                gfx.pose().pushMatrix();
+                gfx.pose().translate(w / 2f + 10f, h / 2f + 4f);
+                gfx.pose().scale(0.75f, 0.75f);
+                gfx.text(mc.font, label, 0, 0, 0xD8FFFFFF, true);
+                gfx.pose().popMatrix();
+            }
+        }
+
         ItemStack stack = findGun(player);
         if (stack == null) return;
 
@@ -37,29 +59,10 @@ public final class MatterGunHud {
                 MatterValues.formatMicro(MatterGunItem.getMatterMicro(stack)),
                 MatterValues.formatMicro(MatterGunItem.capacityFor(player)));
 
-        int w = mc.getWindow().getGuiScaledWidth();
-        int h = mc.getWindow().getGuiScaledHeight();
         // Справа от хотбара (его половина ~91px), чуть выше полосы здоровья.
         int x = Math.min(w / 2 + 100, w - mc.font.width(text) - 4);
         int y = h - 45;
         gfx.text(mc.font, text, x, y, 0xFF55DDCC, true);
-
-        // Сколько материи даст блок под прицелом — справа-сверху от
-        // курсора, чуть уменьшенным шрифтом.
-        if (player.pick(4.5, 1.0f, false) instanceof BlockHitResult bhr) {
-            BlockPos target = bhr.getBlockPos();
-            BlockState state = player.level().getBlockState(target);
-            if (!state.isAir() && state.getDestroySpeed(player.level(), target) >= 0) {
-                long yield = MatterValues.getDematerializeYieldMicro(state.getBlock().asItem());
-                Component label = Component.translatable("tooltip.quantx.matter_yield",
-                        MatterValues.formatMicro(yield));
-                gfx.pose().pushMatrix();
-                gfx.pose().translate(w / 2f + 10f, h / 2f - 14f);
-                gfx.pose().scale(0.75f, 0.75f);
-                gfx.text(mc.font, label, 0, 0, 0xFFFFFFFF, true);
-                gfx.pose().popMatrix();
-            }
-        }
     }
 
     /** Локальный игрок для клиентских расчётов (тултипы, полоска бака). */

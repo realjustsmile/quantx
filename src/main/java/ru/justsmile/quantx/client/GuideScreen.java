@@ -14,13 +14,14 @@ import net.minecraft.world.item.Items;
 import ru.justsmile.quantx.QuantX;
 
 /**
- * Экран справочника QuantX: тёмная минималистичная «бумажная» панель,
- * рецепты нарисованы как на верстаке — сетка 3x3 с иконками
- * ингредиентов, стрелка и слот результата. Наведение на ячейку
- * показывает ванильный тултип предмета.
+ * Экран справочника QuantX: тёмная минималистичная «бумажная» панель.
+ * Контент сгруппирован по темам (материалы, сеть, хранилища,
+ * материализаторы, пушка, ранцы, очки, книга): каждая группа начинается
+ * с интро-карточки — название группы + краткое описание. Рецепты
+ * рисуются как на верстаке — сетка 3x3, стрелка и слот результата.
  *
- * Страницы: обложка + по 4 рецепта (сетка 2x2) + советы.
- * Листание — кнопками ‹ › или стрелками клавиатуры, Esc закрывает.
+ * Страницы: обложка → содержание (клик по строке прыгает на группу)
+ * → карточки по 4 на страницу. Листание — ‹ › или стрелки, Esc закрывает.
  */
 public final class GuideScreen extends Screen {
 
@@ -49,15 +50,42 @@ public final class GuideScreen extends Screen {
     private int page;
     private List<RecipeCard> cards;
 
-    /** Одна карточка рецепта: заголовок + до 9 ингредиентов + результат. */
-    private record RecipeCard(Component title, ItemStack[] grid,
-                              ItemStack result, boolean shapeless) {
+    /**
+     * Карточка страницы. body == null — карточка рецепта (сетка 3x3 +
+     * результат); body != null — текстовая карточка (название группы +
+     * описание), сетка не рисуется. group — ключ группы для содержания.
+     */
+    private record RecipeCard(Component title, String group, ItemStack[] grid,
+                              ItemStack result, boolean shapeless, Component body) {
     }
 
-    private static RecipeCard card(String nameKey, ItemStack[] grid,
+    private static RecipeCard card(String nameKey, String group, ItemStack[] grid,
                                    ItemStack result, boolean shapeless) {
         return new RecipeCard(Component.translatable("guide.quantx.name." + nameKey),
-                grid, result, shapeless);
+                group, grid, result, shapeless, null);
+    }
+
+    /** Интро-карточка группы: название + краткое описание. */
+    private static RecipeCard intro(String group) {
+        return new RecipeCard(Component.translatable("guide.quantx.group." + group),
+                group, null, ItemStack.EMPTY, false,
+                Component.translatable("guide.quantx.desc." + group));
+    }
+
+    /** Группа в содержании: ключ + иконка-представитель. */
+    private record Group(String key, ItemStack icon) {
+    }
+
+    private static List<Group> groups() {
+        return List.of(
+                new Group("resources", s(QuantX.GRANITE_PLATE.get())),
+                new Group("network", s(QuantX.QUANTUM_FIBER_ITEM.get())),
+                new Group("storages", s(QuantX.MATTER_STORAGE_ITEM.get())),
+                new Group("materializers", s(QuantX.MATERIALIZER_ITEM.get())),
+                new Group("gun", s(QuantX.MATTER_GUN.get())),
+                new Group("packs", s(QuantX.MATTER_PACK.get())),
+                new Group("goggles", s(QuantX.MATTER_GOGGLES.get())),
+                new Group("book", s(QuantX.GUIDE_BOOK.get())));
     }
 
     private GuideScreen() {
@@ -72,8 +100,18 @@ public final class GuideScreen extends Screen {
     private int top()  { return (this.height - PANEL_H) / 2; }
 
     private int pageCount() {
-        // 0 — обложка, последняя — рецепты + советы.
-        return 1 + (cards.size() + CARDS_PER_PAGE - 1) / CARDS_PER_PAGE;
+        // 0 — обложка, 1 — содержание, дальше — карточки.
+        return 2 + (cards.size() + CARDS_PER_PAGE - 1) / CARDS_PER_PAGE;
+    }
+
+    /** Страница, с которой начинается группа (индекс её интро-карточки). */
+    private int groupPage(String group) {
+        for (int i = 0; i < cards.size(); i++) {
+            if (group.equals(cards.get(i).group())) {
+                return 2 + i / CARDS_PER_PAGE;
+            }
+        }
+        return 2;
     }
 
     @Override
@@ -135,53 +173,80 @@ public final class GuideScreen extends Screen {
         ItemStack DI = s(Items.DIAMOND);
 
         List<RecipeCard> c = new ArrayList<>();
-        // Материалы
-        c.add(card("granite_dust", loose(G), s(QuantX.GRANITE_DUST.get(), 2), true));
-        c.add(card("granite_plate", grid(Map.of('D', D), "DD", "DD"), s(P.getItem()), false));
-        c.add(card("granite_frame", grid(Map.of('P', P, 'I', I), "PPP", "PIP", "PPP"),
-                s(F.getItem()), false));
-        c.add(card("granite_frame_2", grid(Map.of('G', AU, 'F', F), "GGG", "GFG", "GGG"),
-                s(F2.getItem()), false));
-        c.add(card("granite_frame_3", grid(Map.of('D', DI, 'F', F2), "DDD", "DFD", "DDD"),
-                s(F3.getItem()), false));
-        c.add(card("punch_card", loose(s(Items.PAPER), s(Items.COPPER_INGOT), R, D),
+        // ===== Материалы =====
+        c.add(intro("resources"));
+        c.add(card("granite_dust", "resources", loose(G),
+                s(QuantX.GRANITE_DUST.get(), 2), true));
+        c.add(card("granite_plate", "resources", grid(Map.of('D', D), "DD", "DD"),
+                s(P.getItem()), false));
+        c.add(card("granite_frame", "resources", grid(Map.of('P', P, 'I', I),
+                "PPP", "PIP", "PPP"), s(F.getItem()), false));
+        c.add(card("granite_frame_2", "resources", grid(Map.of('G', AU, 'F', F),
+                "GGG", "GFG", "GGG"), s(F2.getItem()), false));
+        c.add(card("granite_frame_3", "resources", grid(Map.of('D', DI, 'F', F2),
+                "DDD", "DFD", "DDD"), s(F3.getItem()), false));
+        c.add(card("punch_card", "resources",
+                loose(s(Items.PAPER), s(Items.COPPER_INGOT), R, D),
                 s(QuantX.PUNCH_CARD.get()), true));
-        // Сеть
-        c.add(card("quantum_fiber", grid(Map.of('D', D, 'R', R), "DRD"),
+        // ===== Сеть =====
+        c.add(intro("network"));
+        c.add(card("quantum_fiber", "network", grid(Map.of('D', D, 'R', R), "DRD"),
                 s(FB.getItem(), 4), false));
-        c.add(card("matter_storage", grid(Map.of('P', P, 'G', GL, 'F', F), "PGP", "GFG", "PGP"),
-                s(QuantX.MATTER_STORAGE_ITEM.get()), false));
-        c.add(card("matter_storage_2", grid(Map.of('P', P, 'F', F2, 'S', s(QuantX.MATTER_STORAGE_ITEM.get())),
-                "PFP", "FSF", "PFP"), s(QuantX.MATTER_STORAGE_2_ITEM.get()), false));
-        c.add(card("matter_storage_3", grid(Map.of('F', F2, 'T', F3, 'S', s(QuantX.MATTER_STORAGE_2_ITEM.get())),
-                "FTF", "TST", "FTF"), s(QuantX.MATTER_STORAGE_3_ITEM.get()), false));
-        c.add(card("matter_accelerator", grid(Map.of('P', P, 'D', D, 'G', FB), "PDP", "DGD", "PDP"),
-                s(QuantX.MATTER_ACCELERATOR_ITEM.get()), false));
-        c.add(card("matter_valve", loose(s(QuantX.MATTER_ACCELERATOR_ITEM.get()), s(Items.REDSTONE_TORCH)),
+        c.add(card("matter_accelerator", "network", grid(Map.of('P', P, 'D', D, 'G', FB),
+                "PDP", "DGD", "PDP"), s(QuantX.MATTER_ACCELERATOR_ITEM.get()), false));
+        c.add(card("matter_valve", "network",
+                loose(s(QuantX.MATTER_ACCELERATOR_ITEM.get()), s(Items.REDSTONE_TORCH)),
                 s(QuantX.MATTER_VALVE_ITEM.get()), true));
-        // Машины и инструменты
-        c.add(card("matter_flow_meter", loose(FB, s(Items.COMPARATOR)),
+        c.add(card("matter_flow_meter", "network", loose(FB, s(Items.COMPARATOR)),
                 s(QuantX.MATTER_FLOW_METER_ITEM.get()), true));
-        c.add(card("materializer", grid(Map.of('P', P, 'I', I, 'R', R, 'F', F), "PIP", "RFR", "PIP"),
-                s(QuantX.MATERIALIZER_ITEM.get()), false));
-        c.add(card("materializer_2", grid(Map.of('F', F2, 'M', s(QuantX.MATERIALIZER_ITEM.get())),
+        // ===== Хранилища =====
+        c.add(intro("storages"));
+        c.add(card("matter_storage", "storages", grid(Map.of('P', P, 'G', GL, 'F', F),
+                "PGP", "GFG", "PGP"), s(QuantX.MATTER_STORAGE_ITEM.get()), false));
+        c.add(card("matter_storage_2", "storages",
+                grid(Map.of('P', P, 'F', F2, 'S', s(QuantX.MATTER_STORAGE_ITEM.get())),
+                "PFP", "FSF", "PFP"), s(QuantX.MATTER_STORAGE_2_ITEM.get()), false));
+        c.add(card("matter_storage_3", "storages",
+                grid(Map.of('F', F2, 'T', F3, 'S', s(QuantX.MATTER_STORAGE_2_ITEM.get())),
+                "FTF", "TST", "FTF"), s(QuantX.MATTER_STORAGE_3_ITEM.get()), false));
+        // ===== Материализаторы =====
+        c.add(intro("materializers"));
+        c.add(card("materializer", "materializers", grid(Map.of('P', P, 'I', I, 'R', R, 'F', F),
+                "PIP", "RFR", "PIP"), s(QuantX.MATERIALIZER_ITEM.get()), false));
+        c.add(card("materializer_2", "materializers",
+                grid(Map.of('F', F2, 'M', s(QuantX.MATERIALIZER_ITEM.get())),
                 "FFF", "FMF", "FFF"), s(QuantX.MATERIALIZER_2_ITEM.get()), false));
-        c.add(card("materializer_3", grid(Map.of('F', F3, 'M', s(QuantX.MATERIALIZER_2_ITEM.get())),
+        c.add(card("materializer_3", "materializers",
+                grid(Map.of('F', F3, 'M', s(QuantX.MATERIALIZER_2_ITEM.get())),
                 "FFF", "FMF", "FFF"), s(QuantX.MATERIALIZER_3_ITEM.get()), false));
-        c.add(card("materializer_upgrade_2", grid(Map.of('F', F2, 'R', R), "FFF", "FRF", "FFF"),
+        c.add(card("materializer_upgrade_2", "materializers",
+                grid(Map.of('F', F2, 'R', R), "FFF", "FRF", "FFF"),
                 s(QuantX.MATERIALIZER_UPGRADE_2.get()), false));
-        c.add(card("materializer_upgrade_3", grid(Map.of('F', F3, 'R', R), "FFF", "FRF", "FFF"),
+        c.add(card("materializer_upgrade_3", "materializers",
+                grid(Map.of('F', F3, 'R', R), "FFF", "FRF", "FFF"),
                 s(QuantX.MATERIALIZER_UPGRADE_3.get()), false));
-        c.add(card("matter_gun", grid(Map.of('P', P, 'D', DM, 'R', R, 'F', F), "PDP", "RFR", ".P."),
-                s(QuantX.MATTER_GUN.get()), false));
-        c.add(card("matter_pack", grid(Map.of('L', L, 'E', E, 'P', P), "LEL", "PLP", "LLL"),
-                s(QuantX.MATTER_PACK.get()), false));
-        c.add(card("matter_pack_2", grid(Map.of('F', F2, 'P', s(QuantX.MATTER_PACK.get())),
+        // ===== Мат-пушка =====
+        c.add(intro("gun"));
+        c.add(card("matter_gun", "gun", grid(Map.of('P', P, 'D', DM, 'R', R, 'F', F),
+                "PDP", "RFR", ".P."), s(QuantX.MATTER_GUN.get()), false));
+        // ===== Ранцы =====
+        c.add(intro("packs"));
+        c.add(card("matter_pack", "packs", grid(Map.of('L', L, 'E', E, 'P', P),
+                "LEL", "PLP", "LLL"), s(QuantX.MATTER_PACK.get()), false));
+        c.add(card("matter_pack_2", "packs",
+                grid(Map.of('F', F2, 'P', s(QuantX.MATTER_PACK.get())),
                 ".F.", "FPF", ".F."), s(QuantX.MATTER_PACK_2.get()), false));
-        c.add(card("matter_pack_3", grid(Map.of('F', F3, 'P', s(QuantX.MATTER_PACK_2.get())),
+        c.add(card("matter_pack_3", "packs",
+                grid(Map.of('F', F3, 'P', s(QuantX.MATTER_PACK_2.get())),
                 ".F.", "FPF", ".F."), s(QuantX.MATTER_PACK_3.get()), false));
-        // Сама книга
-        c.add(card("guide_book", loose(s(Items.BOOK), D), s(QuantX.GUIDE_BOOK.get()), true));
+        // ===== Очки =====
+        c.add(intro("goggles"));
+        c.add(card("matter_goggles", "goggles", grid(Map.of('L', L, 'G', GL, 'P', P),
+                "LLL", "GPG"), s(QuantX.MATTER_GOGGLES.get()), false));
+        // ===== Справочник =====
+        c.add(intro("book"));
+        c.add(card("guide_book", "book", loose(s(Items.BOOK), D),
+                s(QuantX.GUIDE_BOOK.get()), true));
         return c;
     }
 
@@ -199,6 +264,8 @@ public final class GuideScreen extends Screen {
 
         if (page == 0) {
             drawCover(gfx, px, py);
+        } else if (page == 1) {
+            drawToc(gfx, px, py);
         } else {
             drawRecipePage(gfx, px, py, mouseX, mouseY);
         }
@@ -233,10 +300,28 @@ public final class GuideScreen extends Screen {
         gfx.text(font, text, this.width / 2 - font.width(text) / 2, y, color, false);
     }
 
+    /** Содержание: строка = иконка + название группы + номер страницы. */
+    private void drawToc(GuiGraphicsExtractor gfx, int px, int py) {
+        centered(gfx, Component.translatable("guide.quantx.toc"), py + 16, TITLE);
+        int i = 0;
+        for (Group g : groups()) {
+            int ry = py + 34 + i * 19;
+            gfx.item(g.icon(), px + 34, ry);
+            gfx.text(font, Component.translatable("guide.quantx.group." + g.key()),
+                    px + 56, ry + 4, TEXT, false);
+            String num = Integer.toString(groupPage(g.key()) + 1);
+            gfx.text(font, num, px + PANEL_W - 40 - font.width(num), ry + 4,
+                    NOTE, false);
+            i++;
+        }
+        centered(gfx, Component.translatable("guide.quantx.toc.hint"),
+                py + PANEL_H - 32, NOTE);
+    }
+
     /** До 4 карточек рецептов + блок советов на последней странице. */
     private void drawRecipePage(GuiGraphicsExtractor gfx, int px, int py,
                                 int mouseX, int mouseY) {
-        int start = (page - 1) * CARDS_PER_PAGE;
+        int start = (page - 2) * CARDS_PER_PAGE;
         int end = Math.min(cards.size(), start + CARDS_PER_PAGE);
 
         for (int i = start; i < end; i++) {
@@ -268,10 +353,21 @@ public final class GuideScreen extends Screen {
         }
     }
 
-    /** Карточка: название, сетка 3x3, стрелка, слот результата. */
+    /** Карточка: текстовая (группа) или рецепт (сетка 3x3 + результат). */
     private void drawCard(GuiGraphicsExtractor gfx, RecipeCard card,
                           int cx, int cy, int mouseX, int mouseY) {
-        gfx.text(font, card.title(), cx, cy, TITLE, false);
+        gfx.text(font, card.title(), cx, cy,
+                card.body() != null ? ACCENT : TITLE, false);
+
+        if (card.body() != null) {
+            // Интро-карточка: описание группы, перенос по ширине ячейки.
+            int ty = cy + 14;
+            for (var line : font.split(card.body(), CARD_COL_W - 20)) {
+                gfx.text(font, line, cx, ty, TEXT, false);
+                ty += font.lineHeight + 1;
+            }
+            return;
+        }
 
         int gy = cy + 12;
         for (int i = 0; i < 9; i++) {
@@ -316,6 +412,26 @@ public final class GuideScreen extends Screen {
         gfx.fill(x, midY - 1, x + 10, midY + 2, ARROW);          // древко
         gfx.fill(x + 8, midY - 4, x + 14, midY + 5, ARROW);      // наконечник
         gfx.fill(x + 8, midY - 1, x + 11, midY + 2, PAPER_EDGE); // выемка — «остриё»
+    }
+
+    /** Клик по строке содержания прыгает на первую страницу группы. */
+    @Override
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event,
+                                boolean doubleClick) {
+        if (page == 1) {
+            int py = top();
+            int i = 0;
+            for (Group g : groups()) {
+                int ry = py + 34 + i * 19;
+                if (event.y() >= ry && event.y() < ry + 18
+                        && event.x() >= left() + 28 && event.x() < left() + PANEL_W - 28) {
+                    page = groupPage(g.key());
+                    return true;
+                }
+                i++;
+            }
+        }
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override

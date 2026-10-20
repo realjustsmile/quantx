@@ -133,4 +133,23 @@
   "item.quantx.matter_goggles": "Materialist's Goggles",
   "item.quantx.matter_goggles.desc": "Opens your eyes to the flow of matter. Shift+Right-click to wear.",
   "guide.quantx.name.matter_goggles": "Goggles"
+,
+  "guide.quantx.desc.book": "This guidebook. Crafted from a book and granite dust — in case you lose it.",
+  "guide.quantx.desc.goggles": "Wear them to see matter prices, the gun's charge and tank levels in the world.",
+  "guide.quantx.desc.gun": "Hold RMB on a block to break it down into matter. Shift+RMB on a materializer transfers your stock.",
+  "guide.quantx.desc.materializers": "Assemble items from matter using punch cards. Higher tier — bigger tank and faster assembly.",
+  "guide.quantx.desc.network": "Fiber carries matter between blocks. Accelerators push it forward; valves and meters control the flow.",
+  "guide.quantx.desc.packs": "Worn in the gear slot left of the chestplate — expands the gun's tank.",
+  "guide.quantx.desc.resources": "Granite dust, plates and frames — the base of every QuantX machine. Dust drops from granite.",
+  "guide.quantx.desc.storages": "Tanks for storing matter. Higher tier — bigger capacity.",
+  "guide.quantx.group.book": "Guidebook",
+  "guide.quantx.group.goggles": "Materialist's Goggles",
+  "guide.quantx.group.gun": "Matter Gun",
+  "guide.quantx.group.materializers": "Materializers",
+  "guide.quantx.group.network": "Matter Network",
+  "guide.quantx.group.packs": "Matter Packs",
+  "guide.quantx.group.resources": "Materials",
+  "guide.quantx.group.storages": "Storages",
+  "guide.quantx.toc": "Contents",
+  "guide.quantx.toc.hint": "Click a row to jump to the chapter"
 }
